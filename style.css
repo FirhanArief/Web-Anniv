@@ -23,8 +23,8 @@
   --gradient-bg: radial-gradient(circle at 20% 20%, #2b0b18 0%, #0d0e24 50%, #071329 100%);
   
   /* Latar & Kartu Glassmorphism */
-  --card-bg: rgba(26, 20, 39, 0.72);
-  --card-border: rgba(255, 255, 255, 0.12);
+  --card-bg: rgba(18, 16, 34, 0.78);
+  --card-border: rgba(255, 255, 255, 0.15);
   --text-main: #f8f9fa;
   --text-muted: #cbd5e1;
   --text-dim: #94a3b8;
@@ -66,12 +66,29 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--gradient-bg);
-  background-attachment: fixed;
+  background-color: #070914;
   color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+}
+
+/* Atmospheric Ambient Background: Romantic Couple under Starry Sky */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    linear-gradient(180deg, 
+      rgba(6, 11, 26, 0.68) 0%, 
+      rgba(10, 14, 32, 0.76) 45%, 
+      rgba(8, 7, 22, 0.88) 100%
+    ),
+    url('assets/bg-romantic-night.png') no-repeat center bottom / cover;
+  background-attachment: fixed;
+  z-index: 0;
+  pointer-events: none;
+  filter: brightness(0.92) contrast(1.05);
 }
 
 /* Custom Scrollbar */
@@ -119,7 +136,9 @@ body {
 .surprise-gate {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, #260719 0%, #0c081e 55%, #050b1a 100%);
+  background: 
+    radial-gradient(circle at center, rgba(38, 7, 25, 0.60) 0%, rgba(8, 12, 28, 0.82) 55%, rgba(5, 8, 20, 0.95) 100%),
+    url('assets/bg-romantic-night.png') no-repeat center center / cover;
   z-index: 9999;
   display: flex;
   align-items: center;
