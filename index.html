@@ -20,29 +20,95 @@
   <!-- Background Canvas for Floating Hearts & Sparkles -->
   <canvas id="particleCanvas"></canvas>
 
-  <!-- ================= SURPRISE ENVELOPE GATE (PINTU PEMBUKA) ================= -->
-  <div id="surpriseGate" class="surprise-gate">
-    <div class="gate-card">
-      <div class="envelope-wrapper" id="envelopeWrapper" role="button" tabindex="0" aria-label="Buka amplop kejutan 7 tahun kita">
+  <!-- ================= ROMANTIC PIN LOCK GATE (KUNCI CINTA 16-12-2019) ================= -->
+  <div id="surpriseGate" class="surprise-gate" role="dialog" aria-modal="true" aria-labelledby="pinGateTitle">
+    <div class="gate-card pin-gate-card" id="pinGateCard">
+      <!-- Romantic 3D Envelope & Lock Seal Header -->
+      <div class="envelope-wrapper" id="envelopeWrapper" aria-hidden="true">
         <div class="envelope">
           <div class="envelope-flap"></div>
           <div class="envelope-pocket"></div>
           <div class="envelope-letter">
-            <span class="letter-badge">7 Tahun Cinta</span>
-            <p>Untuk seseorang yang paling spesial di hatiku...</p>
+            <span class="letter-badge">16-12-2019</span>
+            <p>Hari pertama kisah cinta terindah kita dimulai...</p>
           </div>
-          <div class="envelope-heart-seal" id="openGateBtn" aria-hidden="true">
-            <i class="fa-solid fa-heart"></i>
+          <div class="envelope-heart-seal" id="lockIconSeal" aria-hidden="true">
+            <i class="fa-solid fa-lock" id="lockIconMain"></i>
           </div>
         </div>
       </div>
-      <h2 class="gate-title">Ada Kejutan Manis Untukmu ❤️💙</h2>
-      <p class="gate-subtitle">Sentuh amplop cinta di atas untuk membuka perayaan 7 tahun kita</p>
-      <button class="btn-surprise" id="openSurpriseBtn" aria-label="Buka perayaan kejutan cinta">
-        <i class="fa-solid fa-gift"></i> Buka Kejutan Cinta Kita
-      </button>
-      <div class="audio-notice">
-        <i class="fa-solid fa-volume-high"></i> Musik romantis diputar otomatis
+
+      <h2 class="gate-title" id="pinGateTitle">Kunci Cinta 7 Tahun Kita ❤️💙</h2>
+      <p class="gate-subtitle" id="pinGateSubtitle">
+        Masukkan 8 digit PIN tanggal jadian kita untuk membuka perayaan manis ini:
+      </p>
+
+      <!-- 8-Digit PIN Display: DD / MM / YYYY -->
+      <div class="pin-display-wrapper" id="pinDisplayWrapper" aria-label="Indikator 8 digit PIN tanggal jadian">
+        <div class="pin-segment">
+          <span class="pin-segment-label">Tgl (DD)</span>
+          <div class="pin-dots-group">
+            <div class="pin-dot" id="pinDot0" data-idx="0"></div>
+            <div class="pin-dot" id="pinDot1" data-idx="1"></div>
+          </div>
+        </div>
+        <span class="pin-divider" aria-hidden="true">/</span>
+        <div class="pin-segment">
+          <span class="pin-segment-label">Bln (MM)</span>
+          <div class="pin-dots-group">
+            <div class="pin-dot" id="pinDot2" data-idx="2"></div>
+            <div class="pin-dot" id="pinDot3" data-idx="3"></div>
+          </div>
+        </div>
+        <span class="pin-divider" aria-hidden="true">/</span>
+        <div class="pin-segment">
+          <span class="pin-segment-label">Tahun (YYYY)</span>
+          <div class="pin-dots-group">
+            <div class="pin-dot" id="pinDot4" data-idx="4"></div>
+            <div class="pin-dot" id="pinDot5" data-idx="5"></div>
+            <div class="pin-dot" id="pinDot6" data-idx="6"></div>
+            <div class="pin-dot" id="pinDot7" data-idx="7"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Status Message -->
+      <div class="pin-status-msg" id="pinStatusMsg" role="alert" aria-live="polite">
+        Masukkan tanggal hari pertama kita jadian (DDMMYYYY)
+      </div>
+
+      <!-- Interactive Romantic Number Keypad (0-9) -->
+      <div class="pin-keypad" role="group" aria-label="Keypad angka PIN">
+        <button type="button" class="keypad-btn" data-key="1" aria-label="Angka 1">1</button>
+        <button type="button" class="keypad-btn" data-key="2" aria-label="Angka 2">2</button>
+        <button type="button" class="keypad-btn" data-key="3" aria-label="Angka 3">3</button>
+
+        <button type="button" class="keypad-btn" data-key="4" aria-label="Angka 4">4</button>
+        <button type="button" class="keypad-btn" data-key="5" aria-label="Angka 5">5</button>
+        <button type="button" class="keypad-btn" data-key="6" aria-label="Angka 6">6</button>
+
+        <button type="button" class="keypad-btn" data-key="7" aria-label="Angka 7">7</button>
+        <button type="button" class="keypad-btn" data-key="8" aria-label="Angka 8">8</button>
+        <button type="button" class="keypad-btn" data-key="9" aria-label="Angka 9">9</button>
+
+        <button type="button" class="keypad-btn keypad-aux" id="pinHintBtn" aria-label="Buka petunjuk PIN">
+          <i class="fa-solid fa-lightbulb"></i>
+          <span class="keypad-sub">Petunjuk</span>
+        </button>
+        <button type="button" class="keypad-btn" data-key="0" aria-label="Angka 0">0</button>
+        <button type="button" class="keypad-btn keypad-aux" id="pinBackspaceBtn" aria-label="Hapus satu digit PIN">
+          <i class="fa-solid fa-delete-left"></i>
+          <span class="keypad-sub">Hapus</span>
+        </button>
+      </div>
+
+      <div class="pin-footer-actions">
+        <button type="button" class="btn-surprise" id="openSurpriseBtn" aria-label="Buka perayaan kejutan cinta">
+          <i class="fa-solid fa-lock-open"></i> Buka Perayaan Cinta Kita
+        </button>
+        <div class="audio-notice">
+          <i class="fa-solid fa-volume-high"></i> Musik romantis diputar otomatis saat kunci terbuka
+        </div>
       </div>
     </div>
   </div>
@@ -64,11 +130,17 @@
         <a href="#letter"><i class="fa-solid fa-envelope-open-text"></i> Surat Cinta</a>
         <a href="#wishes"><i class="fa-solid fa-pen-fancy"></i> Pesan Kita</a>
       </nav>
-      <!-- Quick Music Button (Visible on Mobile/Tablet) -->
-      <button class="nav-music-pill" id="navMusicPill" aria-label="Nyalakan atau hentikan musik romantis" title="Putar / Pause Lagu">
-        <i class="fa-solid fa-music"></i>
-        <span class="nav-pill-text">Putar Lagu</span>
-      </button>
+      <!-- Quick Action Buttons in Navbar -->
+      <div class="nav-actions-group">
+        <button class="nav-music-pill" id="navMusicPill" aria-label="Nyalakan atau hentikan musik romantis" title="Putar / Pause Lagu">
+          <i class="fa-solid fa-music"></i>
+          <span class="nav-pill-text">Putar Lagu</span>
+        </button>
+        <button class="nav-lock-pill" id="navRelockBtn" aria-label="Kunci kembali website dengan PIN" title="Kunci Kembali Web">
+          <i class="fa-solid fa-lock"></i>
+          <span class="nav-pill-text">Kunci Web</span>
+        </button>
+      </div>
     </header>
 
     <!-- Hero Section -->
@@ -102,7 +174,7 @@
           </div>
         </div>
         <div class="pill pill-blue">
-          <div class="pill-icon"><i class="fa-solid fa-sparkles"></i></div>
+          <div class="pill-icon"><i class="fa-solid fa-heart"></i></div>
           <div class="pill-text">
             <strong>Biru Keceriaan</strong>
             <small>Senyuman & kebahagiaan di setiap hari kita</small>
@@ -125,7 +197,18 @@
         </div>
         <!-- Mini Thumbnails Switcher -->
         <div class="hero-thumbs-row" id="heroThumbsRow" role="tablist" aria-label="Pilih foto sorotan utama">
-          <!-- Dynamically populated by script.js -->
+          <button class="hero-thumb-btn active" role="tab" aria-label="Lihat sorotan Senyuman Terindahmu" aria-selected="true" data-id="preset_3">
+            <img src="AsetFoto/thumbs/IMG_0821.JPG" alt="Senyuman Terindahmu" onerror="this.src='AsetFoto/IMG_0821.JPG'">
+          </button>
+          <button class="hero-thumb-btn" role="tab" aria-label="Lihat sorotan Momen Manis Bersamamu" aria-selected="false" data-id="preset_1">
+            <img src="AsetFoto/thumbs/IMG_0421.JPG" alt="Momen Manis Bersamamu" onerror="this.src='AsetFoto/IMG_0421.JPG'">
+          </button>
+          <button class="hero-thumb-btn" role="tab" aria-label="Lihat sorotan Perjalanan Berharga" aria-selected="false" data-id="preset_8">
+            <img src="AsetFoto/thumbs/IMG_2112.JPG" alt="Perjalanan Berharga" onerror="this.src='AsetFoto/IMG_2112.JPG'">
+          </button>
+          <button class="hero-thumb-btn" role="tab" aria-label="Lihat sorotan Menuju 7 Tahun Cinta Kita" aria-selected="false" data-id="preset_24">
+            <img src="AsetFoto/thumbs/IMG_6825.JPG" alt="Menuju 7 Tahun Cinta Kita" onerror="this.src='AsetFoto/IMG_6825.JPG'">
+          </button>
         </div>
       </div>
     </section>
@@ -196,7 +279,7 @@
         </div>
 
         <div class="music-info">
-          <div class="music-tag"><i class="fa-solid fa-compact-disc"></i> Lagu Kebangsaan Cinta Kita</div>
+          <div class="music-tag"><i class="fa-solid fa-compact-disc"></i> A Song for You</div>
           <h3 class="song-title">Valentine</h3>
           <p class="song-artist">Jim Brickman ft. Martina McBride</p>
 
@@ -207,8 +290,8 @@
 
           <!-- Audio Element with multiple fallback sources and synthesized romantic piano stream -->
           <audio id="audioPlayer" preload="auto" loop autoplay>
-            <source src="Music/My%20Valentine%20-%20Martina%20McBride%20(Lyrics%20video%20dan%20terjemahan).mp3" type="audio/mpeg">
             <source src="assets/valentine.mp3" type="audio/mpeg">
+            <source src="Music/My Valentine - Martina McBride (Lyrics video dan terjemahan).mp3" type="audio/mpeg">
             <source src="https://ia800905.us.archive.org/24/items/JimBrickmanValentine/Jim%20Brickman%20-%20Valentine.mp3" type="audio/mpeg">
           </audio>
 
@@ -418,7 +501,7 @@
       <div class="section-header">
         <span class="section-tag"><i class="fa-solid fa-images"></i> Galeri Kenangan</span>
         <h2 class="section-title">Jejak Momen Indah Kita</h2>
-        <p class="section-subtitle">24 foto kenangan manis perjalanan cinta kita (Maret 2025 – Oktober 2026)</p>
+        <p class="section-subtitle">24 foto kenangan manis perjalanan cinta kita (Maret 2025 s/d Oktober 2026)</p>
       </div>
 
       <!-- Highlights Milestone Bar -->
@@ -428,26 +511,117 @@
           <span class="highlights-title">Tonggak Perjalanan Cinta Kita</span>
         </div>
         <div class="highlights-strip" id="highlightsStrip" role="region" aria-label="Sorotan momen utama">
-          <!-- Rendered dynamically by script.js -->
+          <div class="highlight-card" role="button" tabindex="0" aria-label="Buka momen sorotan: Momen Pertama Kita" onclick="openLightbox('preset_1')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_1')" data-id="preset_1">
+            <img src="AsetFoto/thumbs/IMG_0421.JPG" alt="Momen Pertama Kita" loading="lazy" onerror="this.src='AsetFoto/IMG_0421.JPG'">
+            <div class="highlight-overlay">
+              <span class="hl-tag">Awal Kenangan</span>
+              <h4 class="hl-title">Momen Pertama Kita</h4>
+              <span class="hl-date"><i class="fa-regular fa-calendar"></i> 29 Maret 2025</span>
+            </div>
+          </div>
+          <div class="highlight-card" role="button" tabindex="0" aria-label="Buka momen sorotan: Perjalanan Berdua" onclick="openLightbox('preset_8')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_8')" data-id="preset_8">
+            <img src="AsetFoto/thumbs/IMG_2112.JPG" alt="Perjalanan Berdua" loading="lazy" onerror="this.src='AsetFoto/IMG_2112.JPG'">
+            <div class="highlight-overlay">
+              <span class="hl-tag">Petualangan</span>
+              <h4 class="hl-title">Perjalanan Berdua</h4>
+              <span class="hl-date"><i class="fa-regular fa-calendar"></i> 4 Agustus 2025</span>
+            </div>
+          </div>
+          <div class="highlight-card" role="button" tabindex="0" aria-label="Buka momen sorotan: Awal Tahun Bersama" onclick="openLightbox('preset_16')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_16')" data-id="preset_16">
+            <img src="AsetFoto/thumbs/IMG_3741.JPG" alt="Awal Tahun Bersama" loading="lazy" onerror="this.src='AsetFoto/IMG_3741.JPG'">
+            <div class="highlight-overlay">
+              <span class="hl-tag">Tahun 2026</span>
+              <h4 class="hl-title">Awal Tahun Bersama</h4>
+              <span class="hl-date"><i class="fa-regular fa-calendar"></i> 3 Januari 2026</span>
+            </div>
+          </div>
+          <div class="highlight-card" role="button" tabindex="0" aria-label="Buka momen sorotan: Menuju 16 Des 2026" onclick="openLightbox('preset_24')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_24')" data-id="preset_24">
+            <img src="AsetFoto/thumbs/IMG_6825.JPG" alt="Menuju 16 Des 2026" loading="lazy" onerror="this.src='AsetFoto/IMG_6825.JPG'">
+            <div class="highlight-overlay">
+              <span class="hl-tag">7 Tahun Cinta</span>
+              <h4 class="hl-title">Menuju 16 Des 2026</h4>
+              <span class="hl-date"><i class="fa-regular fa-calendar"></i> 9 Oktober 2026</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Upload Zone for Additional Memories -->
       <div class="upload-container">
         <div class="upload-dropzone" id="dropZone">
-          <div class="dropzone-icon">
+          <div class="dropzone-icon" aria-hidden="true">
             <i class="fa-solid fa-cloud-arrow-up"></i>
           </div>
-          <h3>Tambah Foto / Video Kenangan Baru</h3>
-          <p>Ingin menambah momen spesial lainnya? Pilih atau tarik file ke sini</p>
-          <div class="upload-inputs">
-            <input type="text" id="mediaCaption" placeholder="Catatan momen manis..." class="caption-input">
-            <label class="btn-choose-file">
-              <i class="fa-solid fa-plus"></i> Pilih File Foto / Video
+          <h3>Abadikan Foto & Video Kenangan Cinta</h3>
+          <p>Pilih atau tarik foto (JPG, PNG, GIF) atau video (MP4, WEBM) momen manis berdua kita</p>
+
+          <div class="upload-action-buttons">
+            <label class="btn-choose-file" tabindex="0" role="button" aria-label="Pilih foto atau video dari perangkat">
+              <i class="fa-solid fa-photo-film"></i> Pilih Foto / Video
               <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none;">
             </label>
+            <button type="button" class="btn-camera-file" id="openLiveCameraBtn" aria-label="Buka kamera perangkat langsung">
+              <i class="fa-solid fa-camera"></i> Buka Kamera
+            </button>
+            <input type="file" id="nativeCameraPhoto" accept="image/*" capture="environment" style="display:none;">
+            <input type="file" id="nativeCameraVideo" accept="video/*" capture="environment" style="display:none;">
           </div>
-          <small class="upload-tip"><i class="fa-solid fa-database"></i> Foto baru akan otomatis tersimpan di memori perangkat ini (IndexedDB).</small>
+
+          <small class="upload-tip"><i class="fa-solid fa-shield-heart"></i> Otomatis tersimpan aman di perangkat Anda (IndexedDB & Offline Storage).</small>
+
+          <!-- Interactive Live Preview & Details Panel -->
+          <div class="upload-preview-box" id="uploadPreviewBox" role="region" aria-label="Pratinjau Foto atau Video yang dipilih">
+            <div class="preview-header">
+              <div class="preview-header-title">
+                <i class="fa-solid fa-sparkles text-red"></i> Pratinjau Momen Baru
+              </div>
+              <span class="preview-file-badge" id="previewFileBadge">Foto Terpilih</span>
+            </div>
+
+            <div class="preview-content-grid">
+              <div class="preview-media-wrapper" id="previewMediaWrapper">
+                <!-- Image or Video preview dynamically rendered -->
+                <img id="previewImg" src="" alt="Pratinjau media" style="display:none;">
+                <video id="previewVideo" controls playsinline style="display:none;"></video>
+              </div>
+
+              <div class="preview-form">
+                <div class="preview-form-group">
+                  <label for="previewTitleInput">Judul Momen:</label>
+                  <input type="text" id="previewTitleInput" class="upload-field-input" placeholder="Contoh: Kencan Pertama Kita di Kafe...">
+                </div>
+
+                <div class="preview-form-group">
+                  <label for="previewCaptionInput">Cerita / Catatan Manis:</label>
+                  <textarea id="previewCaptionInput" class="upload-field-input" rows="2" placeholder="Tuliskan catatan romantis untuk momen ini..."></textarea>
+                </div>
+
+                <div class="preview-row-two">
+                  <div class="preview-form-group">
+                    <label for="previewDateInput">Tanggal Momen:</label>
+                    <input type="date" id="previewDateInput" class="upload-field-input">
+                  </div>
+                  <div class="preview-form-group">
+                    <label for="previewCategorySelect">Kategori / Tahun:</label>
+                    <select id="previewCategorySelect" class="upload-field-input">
+                      <option value="user" selected>Unggahan Baru</option>
+                      <option value="2026">Tahun 2026</option>
+                      <option value="2025">Tahun 2025</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="preview-actions">
+                  <button type="button" id="btnConfirmUpload" class="btn-save-moment">
+                    <i class="fa-solid fa-heart-circle-plus"></i> Simpan ke Galeri Cinta
+                  </button>
+                  <button type="button" id="btnCancelUpload" class="btn-cancel-moment">
+                    <i class="fa-solid fa-xmark"></i> Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -462,12 +636,515 @@
 
       <!-- Gallery Grid -->
       <div class="gallery-grid" id="galleryGrid">
-        <!-- Rendered dynamically by script.js from preset photos and user uploads -->
+        <div class="moment-card" data-id="preset_1" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_1')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_1')" aria-label="Buka foto Momen Manis Bersamamu di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_0421.JPG" alt="Momen Manis Bersamamu" loading="lazy" onerror="this.src='AsetFoto/IMG_0421.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Momen Manis Bersamamu</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Awal musim semi penuh senyum dan kehangatan langkah kita.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 29 Maret 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_2" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_2')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_2')" aria-label="Buka foto Malam Penuh Cerita di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_0446.JPG" alt="Malam Penuh Cerita" loading="lazy" onerror="this.src='AsetFoto/IMG_0446.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Malam Penuh Cerita</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Menghabiskan malam dengan obrolan hangat yang tak pernah habis.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 29 Maret 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_3" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_3')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_3')" aria-label="Buka foto Senyuman Terindahmu di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_0821.JPG" alt="Senyuman Terindahmu" loading="lazy" onerror="this.src='AsetFoto/IMG_0821.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Senyuman Terindahmu</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Tatapan dan senyum manis yang selalu menenangkan duniaku.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 3 Mei 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_4" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_4')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_4')" aria-label="Buka foto Langkah Kita Bersama di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_0827.JPG" alt="Langkah Kita Bersama" loading="lazy" onerror="this.src='AsetFoto/IMG_0827.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Langkah Kita Bersama</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Bergandengan tangan melangkah di setiap jalan kehidupan berdua.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 3 Mei 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_5" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_5')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_5')" aria-label="Buka foto Sore yang Hangat di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_1082.JPG" alt="Sore yang Hangat" loading="lazy" onerror="this.src='AsetFoto/IMG_1082.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Sore yang Hangat</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Menikmati langit senja bersama wanita yang paling kucintai.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 24 Mei 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_6" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_6')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_6')" aria-label="Buka foto Pagi yang Menyenangkan di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_1092.JPG" alt="Pagi yang Menyenangkan" loading="lazy" onerror="this.src='AsetFoto/IMG_1092.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Pagi yang Menyenangkan</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Keceriaan pagi yang selalu diawali dengan tawamu yang manis.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 25 Mei 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_7" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_7')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_7')" aria-label="Buka foto Tawa Ceria Kita di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_1093.JPG" alt="Tawa Ceria Kita" loading="lazy" onerror="this.src='AsetFoto/IMG_1093.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Tawa Ceria Kita</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Candaan sederhana yang selalu berujung tawa bahagia tanpa beban.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 25 Mei 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_8" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_8')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_8')" aria-label="Buka foto Perjalanan Berharga di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_2112.JPG" alt="Perjalanan Berharga" loading="lazy" onerror="this.src='AsetFoto/IMG_2112.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Perjalanan Berharga</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Setiap kilometer terasa begitu istimewa saat ada kamu di sisiku.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 4 Agustus 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_9" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_9')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_9')" aria-label="Buka foto Momen Spesial Berdua di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_2898.JPG" alt="Momen Spesial Berdua" loading="lazy" onerror="this.src='AsetFoto/IMG_2898.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Momen Spesial Berdua</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Menikmati waktu berkualitas bersama di tengah hiruk pikuk hari.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 18 Oktober 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_10" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_10')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_10')" aria-label="Buka foto Cahaya Malam Romantis di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_2904.JPG" alt="Cahaya Malam Romantis" loading="lazy" onerror="this.src='AsetFoto/IMG_2904.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Cahaya Malam Romantis</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Malam syahdu bertabur cahaya bersama wanita impian hatiku.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 18 Oktober 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_11" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_11')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_11')" aria-label="Buka foto Hari yang Tak Terlupakan di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_2912.JPG" alt="Hari yang Tak Terlupakan" loading="lazy" onerror="this.src='AsetFoto/IMG_2912.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Hari yang Tak Terlupakan</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Kenangan manis yang selalu terukir rapi di sudut terdalam hati.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 19 Oktober 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_12" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_12')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_12')" aria-label="Buka foto Kompak Berdua di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_3404.JPG" alt="Kompak Berdua" loading="lazy" onerror="this.src='AsetFoto/IMG_3404.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Kompak Berdua</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Selalu berada dalam satu frekuensi di setiap tawa dan suasana.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 2 Desember 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_13" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_13')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_13')" aria-label="Buka foto Kebersamaan Manis di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_3405.JPG" alt="Kebersamaan Manis" loading="lazy" onerror="this.src='AsetFoto/IMG_3405.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Kebersamaan Manis</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Momen candid yang selalu memancarkan kehangatan dan ketulusan.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 2 Desember 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_14" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_14')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_14')" aria-label="Buka foto Menyambut Akhir Tahun di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_3484.JPG" alt="Menyambut Akhir Tahun" loading="lazy" onerror="this.src='AsetFoto/IMG_3484.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Menyambut Akhir Tahun</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Bersyukur dapat terus berjalan berdampingan melewati waktu demi waktu.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 6 Desember 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_15" data-year="2025">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_15')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_15')" aria-label="Buka foto Dekapan Hangat di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_3495.JPG" alt="Dekapan Hangat" loading="lazy" onerror="this.src='AsetFoto/IMG_3495.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2025
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Dekapan Hangat</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Tempat ternyaman di mana hatiku selalu merasa pulang dan aman.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 6 Desember 2025</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_16" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_16')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_16')" aria-label="Buka foto Awal Tahun Penuh Cinta di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_3741.JPG" alt="Awal Tahun Penuh Cinta" loading="lazy" onerror="this.src='AsetFoto/IMG_3741.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Awal Tahun Penuh Cinta</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Membuka lembaran tahun 2026 dengan cinta yang semakin mengakar kuat.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 3 Januari 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_17" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_17')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_17')" aria-label="Buka foto Menjelang Hari Kasih Sayang di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_4107.JPG" alt="Menjelang Hari Kasih Sayang" loading="lazy" onerror="this.src='AsetFoto/IMG_4107.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Menjelang Hari Kasih Sayang</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Bersamamu, setiap hari terasa seperti hari kasih sayang yang abadi.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 13 Februari 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_18" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_18')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_18')" aria-label="Buka foto Malam Romantis Berdua di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_4110.JPG" alt="Malam Romantis Berdua" loading="lazy" onerror="this.src='AsetFoto/IMG_4110.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Malam Romantis Berdua</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Suasana syahdu yang membuat rasa syukur memilikimu berlipat ganda.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 13 Februari 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_19" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_19')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_19')" aria-label="Buka foto Warna-Warni Kebahagiaan di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_4483.JPG" alt="Warna-Warni Kebahagiaan" loading="lazy" onerror="this.src='AsetFoto/IMG_4483.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Warna-Warni Kebahagiaan</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Hidupku jauh lebih berwarna dan cerah sejak kamu hadir di dalamnya.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 19 Maret 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_20" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_20')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_20')" aria-label="Buka foto Kencan Bahagia di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_5388.JPG" alt="Kencan Bahagia" loading="lazy" onerror="this.src='AsetFoto/IMG_5388.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Kencan Bahagia</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Rasa rindu yang selalu hadir meski baru saja berpisah beberapa saat.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 8 Mei 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_21" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_21')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_21')" aria-label="Buka foto Senyum Bahagia Kita di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_5389.JPG" alt="Senyum Bahagia Kita" loading="lazy" onerror="this.src='AsetFoto/IMG_5389.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Senyum Bahagia Kita</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Pancaran ketulusan dan cinta dari dua hati yang saling melengkapi.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 8 Mei 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_22" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_22')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_22')" aria-label="Buka foto Hari Penuh Keceriaan di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_5641.JPG" alt="Hari Penuh Keceriaan" loading="lazy" onerror="this.src='AsetFoto/IMG_5641.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Hari Penuh Keceriaan</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Keceriaan biru yang selalu menyegarkan jiwa di setiap langkah.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 6 Juni 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_23" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_23')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_23')" aria-label="Buka foto Kenangan Manis September di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_6698.JPG" alt="Kenangan Manis September" loading="lazy" onerror="this.src='AsetFoto/IMG_6698.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Kenangan Manis September</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Menghitung hari dengan debaran bahagia menuju 7 tahun kebersamaan.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 25 September 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="moment-card" data-id="preset_24" data-year="2026">
+          <div class="moment-media" role="button" tabindex="0" onclick="openLightbox('preset_24')" onkeydown="if(event.key==='Enter'||event.key===' ')openLightbox('preset_24')" aria-label="Buka foto Menuju 7 Tahun Cinta Kita di resolusi penuh">
+            <img src="AsetFoto/thumbs/IMG_6825.JPG" alt="Menuju 7 Tahun Cinta Kita" loading="lazy" onerror="this.src='AsetFoto/IMG_6825.JPG'">
+            <span class="media-type-badge photo">
+              <i class="fa-solid fa-heart"></i> 2026
+            </span>
+            <div class="moment-overlay" aria-hidden="true">
+              <i class="fa-solid fa-expand"></i>
+            </div>
+          </div>
+          <div class="moment-details">
+            <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Menuju 7 Tahun Cinta Kita</div>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Tujuh tahun yang penuh arti dan cinta ini akan kujaga hingga selamanya.</p>
+            <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 9 Oktober 2026</span>
+              <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-heart"></i> Abadi
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Reply / Wish Section For Her -->
-    <section class="section wish-section">
+    <!-- Reply & Message Board Section For Her -->
+    <section id="wishes" class="section wish-section">
       <div class="wish-card">
         <div class="wish-header">
           <i class="fa-solid fa-paper-plane text-red"></i>
@@ -475,15 +1152,36 @@
           <p>Tuliskan apa yang kamu rasakan atau harapanmu untuk tahun-tahun berikutnya ❤️💙</p>
         </div>
         <form id="wishForm" class="wish-form">
-          <input type="text" id="wishAuthor" placeholder="Nama atau panggilan manismu..." required>
-          <textarea id="wishMessage" rows="3" placeholder="Tulis pesan atau harapan manismu di sini..." required></textarea>
-          <button type="submit" class="btn-wish">
+          <input type="text" id="wishAuthor" placeholder="Nama atau panggilan manismu..." required maxlength="40">
+          <textarea id="wishMessage" rows="3" placeholder="Tulis pesan atau harapan manismu di sini..." required maxlength="500"></textarea>
+          <button type="submit" class="btn-wish" id="btnSubmitWish">
             <i class="fa-solid fa-heart"></i> Kirimkan Pesan Cinta
           </button>
         </form>
 
-        <div class="wishes-list" id="wishesList">
-          <!-- Dynamically filled with saved messages -->
+        <!-- Divider Pita Papan Pesan -->
+        <div class="wishes-divider">
+          <span><i class="fa-solid fa-heart text-red"></i> Papan Pesan Cinta Kita <i class="fa-solid fa-heart text-blue"></i></span>
+        </div>
+
+        <!-- Papan Pesan Kenangan (Wall of Wishes Board) -->
+        <div class="wishes-board-container" id="wishesBoardContainer">
+          <div class="wishes-board-header">
+            <div class="board-header-left">
+              <span class="board-title"><i class="fa-solid fa-clipboard-list"></i> Papan Pesan & Doa</span>
+              <span class="board-badge" id="boardCountBadge">0 Pesan Tertempel</span>
+            </div>
+            <div class="board-header-right">
+              <button type="button" class="btn-board-clear" id="btnClearAllWishes" title="Hapus semua pesan dari papan" style="display: none;">
+                <i class="fa-solid fa-trash-can"></i> Bersihkan Papan
+              </button>
+            </div>
+          </div>
+
+          <!-- The Board Grid -->
+          <div class="wishes-board-grid" id="wishesList" role="region" aria-label="Daftar pesan cinta di papan">
+            <!-- Dynamically filled with wish note cards -->
+          </div>
         </div>
       </div>
     </section>
@@ -576,6 +1274,82 @@
       </button>
     </div>
   </div>
+
+  <!-- ================= LIVE CAMERA MODAL (DEVICE CAMERA) ================= -->
+  <div id="cameraModal" class="camera-modal" role="dialog" aria-modal="true" aria-labelledby="cameraModalTitle" aria-hidden="true">
+    <div class="camera-modal-backdrop" id="cameraBackdrop"></div>
+    <div class="camera-box">
+      <div class="camera-header">
+        <h3 id="cameraModalTitle"><i class="fa-solid fa-camera text-red"></i> Kamera Momen Cinta</h3>
+        <button class="camera-close-x" id="cameraCloseX" aria-label="Tutup kamera">&times;</button>
+      </div>
+
+      <!-- Live Viewfinder Screen -->
+      <div class="camera-viewfinder">
+        <video id="cameraVideoFeed" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas" style="display:none;"></canvas>
+        <div id="cameraFlashOverlay" class="camera-flash-overlay"></div>
+        
+        <!-- Recording Timer Badge -->
+        <div id="cameraRecordingBadge" class="camera-recording-badge" style="display:none;">
+          <span class="rec-dot"></span> <span id="cameraTimerText">00:00</span>
+        </div>
+
+        <!-- Viewfinder Grid Overlay -->
+        <div class="viewfinder-frame" aria-hidden="true">
+          <span class="vf-corner tl"></span>
+          <span class="vf-corner tr"></span>
+          <span class="vf-corner bl"></span>
+          <span class="vf-corner br"></span>
+          <i class="fa-solid fa-heart vf-center-heart"></i>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs (Foto / Video) -->
+      <div class="camera-mode-tabs" role="tablist">
+        <button type="button" class="cam-tab active" id="camTabPhoto" role="tab" aria-selected="true">
+          <i class="fa-solid fa-camera"></i> Ambil Foto
+        </button>
+        <button type="button" class="cam-tab" id="camTabVideo" role="tab" aria-selected="false">
+          <i class="fa-solid fa-video"></i> Rekam Video
+        </button>
+      </div>
+
+      <!-- Camera Controls Bar -->
+      <div class="camera-controls-bar">
+        <button type="button" class="cam-aux-btn" id="camSwitchFacingBtn" title="Ganti Kamera Depan/Belakang" aria-label="Ganti kamera depan atau belakang">
+          <i class="fa-solid fa-camera-rotate"></i>
+        </button>
+
+        <!-- Photo Shutter Button -->
+        <button type="button" class="cam-shutter-main" id="camCapturePhotoBtn" aria-label="Ambil Foto Sekarang" title="Ambil Foto">
+          <div class="shutter-inner">
+            <i class="fa-solid fa-camera"></i>
+          </div>
+        </button>
+
+        <!-- Video Record / Stop Button -->
+        <button type="button" class="cam-shutter-record" id="camRecordVideoBtn" aria-label="Mulai atau Berhenti Rekam Video" title="Mulai Rekam Video" style="display:none;">
+          <div class="record-inner" id="recordInnerIcon">
+            <i class="fa-solid fa-circle"></i>
+          </div>
+        </button>
+
+        <button type="button" class="cam-aux-btn" id="camCancelBtn" title="Batal & Tutup" aria-label="Tutup kamera">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="camera-footer-tip">
+        <small><i class="fa-solid fa-shield-heart"></i> Kamera dibuka langsung di perangkat Anda tanpa diunggah ke internet luar.</small>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
   <script src="script.js"></script>
 </body>

@@ -17,6 +17,8 @@ let isPlaying = false;
 let synthesizedAudio = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  allMomentsCache = [...ASET_FOTO_ITEMS];
+  currentVisibleMoments = [...ASET_FOTO_ITEMS];
   initParticleCanvas();
   initCountdown();
   initMusicPlayer();
@@ -25,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initHeroPhotoShowcase();
   initGalleryHighlights();
   initIndexedDB();
+  initLiveCameraFeature();
   initLetterFeatures();
   initWishesFeature();
   initClickSparkles();
@@ -157,46 +160,223 @@ function initClickSparkles() {
   });
 }
 
-/* 2. Surprise Gate & Envelope Reveal */
+/* 2. Romantic PIN Lock Gate (16122019 - Tanggal Jadian Kita) */
 function initSurpriseGate() {
+  const TARGET_PIN = '16122019';
   const gate = document.getElementById('surpriseGate');
   const mainContent = document.getElementById('mainContent');
   const envelope = document.getElementById('envelopeWrapper');
+  const lockSeal = document.getElementById('lockIconSeal');
+  const lockIcon = document.getElementById('lockIconMain');
+  const displayWrapper = document.getElementById('pinDisplayWrapper');
+  const statusMsg = document.getElementById('pinStatusMsg');
   const openSurpriseBtn = document.getElementById('openSurpriseBtn');
+  const hintBtn = document.getElementById('pinHintBtn');
+  const backspaceBtn = document.getElementById('pinBackspaceBtn');
+  const keypadBtns = document.querySelectorAll('.pin-keypad .keypad-btn[data-key]');
+  const relockBtn = document.getElementById('navRelockBtn');
 
-  function openSurprise(e) {
-    if (e) e.stopPropagation();
-    if (envelope) envelope.classList.add('opened');
+  let enteredPin = '';
+  let isChecking = false;
 
-    const rect = envelope ? envelope.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
-    if (window.triggerParticleBurst) {
-      window.triggerParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 50);
+  function updateDots() {
+    for (let i = 0; i < 8; i++) {
+      const dot = document.getElementById(`pinDot${i}`);
+      if (dot) {
+        dot.classList.toggle('filled', i < enteredPin.length);
+      }
     }
-
-    // Ensure music is active and playing
-    if (!isPlaying && window.playMusic) {
-      window.playMusic();
-    }
-
-    setTimeout(() => {
-      if (gate) gate.classList.add('open');
-      if (mainContent) mainContent.classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 900);
   }
 
-  if (envelope) {
-    envelope.addEventListener('click', openSurprise);
-    envelope.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openSurprise(e);
+  function setStatus(text, type = 'normal') {
+    if (!statusMsg) return;
+    statusMsg.textContent = text;
+    statusMsg.classList.remove('error', 'success');
+    if (type === 'error') statusMsg.classList.add('error');
+    if (type === 'success') statusMsg.classList.add('success');
+  }
+
+  function handleDigit(digit) {
+    if (isChecking) return;
+    if (enteredPin.length < 8) {
+      enteredPin += digit;
+      updateDots();
+      if (displayWrapper) displayWrapper.classList.remove('error');
+
+      if (enteredPin.length === 8) {
+        validatePin();
+      }
+    }
+  }
+
+  function handleBackspace() {
+    if (isChecking) return;
+    if (enteredPin.length > 0) {
+      enteredPin = enteredPin.slice(0, -1);
+      updateDots();
+      if (displayWrapper) displayWrapper.classList.remove('error');
+      setStatus('Masukkan tanggal hari pertama kita jadian (DDMMYYYY)', 'normal');
+    }
+  }
+
+  function showHint() {
+    setStatus('Petunjuk: Tanggal hari jadian kita berdua format DDMMYYYY (16-12-2019) 🥰', 'normal');
+    if (window.triggerParticleBurst) {
+      const rect = hintBtn ? hintBtn.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+      window.triggerParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12);
+    }
+  }
+
+  function validatePin() {
+    if (isChecking) return;
+    isChecking = true;
+
+    if (enteredPin === TARGET_PIN) {
+      // SUCCESS: PIN Correct!
+      if (displayWrapper) {
+        displayWrapper.classList.remove('error');
+        displayWrapper.classList.add('success');
+      }
+      setStatus('PIN Benar! Selamat datang di perayaan 7 tahun cinta kita, Sayang! ❤️💙', 'success');
+
+      if (lockSeal) lockSeal.classList.add('unlocked');
+      if (lockIcon) {
+        lockIcon.classList.remove('fa-lock');
+        lockIcon.classList.add('fa-lock-open');
+      }
+
+      if (envelope) {
+        envelope.classList.add('opened');
+      }
+
+      // Celebratory particle burst
+      if (window.triggerParticleBurst) {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        window.triggerParticleBurst(cx, cy, 60);
+        setTimeout(() => window.triggerParticleBurst(cx - 120, cy - 80, 40), 200);
+        setTimeout(() => window.triggerParticleBurst(cx + 120, cy - 80, 40), 400);
+      }
+
+      // Play anniversary romantic music
+      if (window.playMusic) {
+        window.playMusic();
+      }
+
+      // Open the gate smoothly
+      setTimeout(() => {
+        if (gate) gate.classList.add('open');
+        if (mainContent) mainContent.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        isChecking = false;
+      }, 950);
+    } else {
+      // ERROR: Incorrect PIN
+      if (displayWrapper) {
+        displayWrapper.classList.remove('success');
+        displayWrapper.classList.add('error');
+      }
+      setStatus('Ups, PIN salah sayang! Coba ingat tanggal pertama kita jadian ya (16-12-2019) 💕', 'error');
+
+      setTimeout(() => {
+        enteredPin = '';
+        updateDots();
+        if (displayWrapper) displayWrapper.classList.remove('error');
+        isChecking = false;
+      }, 700);
+    }
+  }
+
+  // Keypad click handlers
+  keypadBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const digit = btn.dataset.key;
+      if (digit !== undefined) handleDigit(digit);
+    });
+  });
+
+  if (backspaceBtn) {
+    backspaceBtn.addEventListener('click', handleBackspace);
+  }
+
+  if (hintBtn) {
+    hintBtn.addEventListener('click', showHint);
+  }
+
+  if (openSurpriseBtn) {
+    openSurpriseBtn.addEventListener('click', () => {
+      if (enteredPin.length === 8) {
+        validatePin();
+      } else {
+        setStatus('Ketikkan lengkap 8 digit PIN tanggal jadian kita ya sayang! 💕', 'error');
+        if (displayWrapper) {
+          displayWrapper.classList.remove('error');
+          void displayWrapper.offsetWidth;
+          displayWrapper.classList.add('error');
+        }
       }
     });
   }
 
-  if (openSurpriseBtn) {
-    openSurpriseBtn.addEventListener('click', openSurprise);
+  // Physical keyboard support when gate is active
+  document.addEventListener('keydown', (e) => {
+    if (!gate || gate.classList.contains('open')) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      handleDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      handleBackspace();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (enteredPin.length === 8) {
+        validatePin();
+      } else {
+        setStatus('Ketikkan lengkap 8 digit PIN tanggal jadian kita ya sayang! 💕', 'error');
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      enteredPin = '';
+      updateDots();
+      setStatus('Masukkan tanggal hari pertama kita jadian (DDMMYYYY)', 'normal');
+    }
+  });
+
+  // Relock Button Handler (Navbar)
+  if (relockBtn) {
+    relockBtn.addEventListener('click', () => {
+      if (gate) {
+        gate.classList.remove('open');
+      }
+      if (mainContent) {
+        mainContent.classList.add('hidden');
+      }
+      enteredPin = '';
+      updateDots();
+      isChecking = false;
+
+      if (displayWrapper) {
+        displayWrapper.classList.remove('success', 'error');
+      }
+      if (envelope) {
+        envelope.classList.remove('opened');
+      }
+      if (lockSeal) {
+        lockSeal.classList.remove('unlocked');
+      }
+      if (lockIcon) {
+        lockIcon.classList.remove('fa-lock-open');
+        lockIcon.classList.add('fa-lock');
+      }
+
+      setStatus('Masukkan tanggal hari pertama kita jadian (DDMMYYYY)', 'normal');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (window.showToast) {
+        showToast('Website perayaan berhasil dikunci kembali. Masukkan PIN untuk membuka.', 'info');
+      }
+    });
   }
 }
 
@@ -508,39 +688,157 @@ function initReasonCards() {
 
 /* 6. IndexedDB Gallery for Memories */
 function initIndexedDB() {
-  const DB_NAME = 'AnniversaryMemoriesDB';
-  const DB_VERSION = 1;
-  const STORE_NAME = 'moments';
-
-  const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-  request.onupgradeneeded = (e) => {
-    const dbInstance = e.target.result;
-    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-      dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-    }
-  };
-
-  request.onsuccess = (e) => {
-    db = e.target.result;
-    loadGalleryMoments();
-  };
-
-  request.onerror = (e) => {
-    console.error('IndexedDB error:', e.target.error);
-  };
+  allMomentsCache = [...ASET_FOTO_ITEMS];
+  currentVisibleMoments = [...ASET_FOTO_ITEMS];
 
   setupDropZoneAndUpload();
   setupGalleryFilters();
   setupLightbox();
+
+  const DB_NAME = 'AnniversaryMemoriesDB';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'moments';
+
+  try {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (e) => {
+      const dbInstance = e.target.result;
+      if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      loadGalleryMoments();
+    };
+
+    request.onerror = (e) => {
+      console.warn('IndexedDB unavailable or restricted in this environment (offline/file protocol), using preset memories:', e.target ? e.target.error : e);
+      loadGalleryMoments();
+    };
+  } catch (err) {
+    console.warn('IndexedDB initialization exception, falling back to preset moments:', err);
+    loadGalleryMoments();
+  }
 }
+
+/* Upload & Storage Helpers */
+const USER_MOMENTS_STORAGE_KEY = 'anniversary_user_moments_v1';
+
+function getStoredUserMoments() {
+  try {
+    const raw = localStorage.getItem(USER_MOMENTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.warn('LocalStorage read error:', err);
+    return [];
+  }
+}
+
+function persistUserMoments(momentsList) {
+  try {
+    localStorage.setItem(USER_MOMENTS_STORAGE_KEY, JSON.stringify(momentsList));
+  } catch (err) {
+    console.warn('LocalStorage save error:', err);
+  }
+}
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast-item ${type === 'success' ? 'toast-success' : ''}`;
+  const icon = type === 'success' ? 'fa-circle-check text-blue' : 'fa-circle-info text-red';
+  toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 350);
+  }, 4000);
+}
+
+function compressImageFile(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const img = new Image();
+      img.onerror = () => resolve(dataUrl);
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        resolve(canvas.toDataURL(mime, quality));
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+let pendingFilesQueue = [];
+let currentPreviewIndex = 0;
+let currentPreviewDataUrl = null;
+let currentPreviewFileType = 'image';
 
 function setupDropZoneAndUpload() {
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('fileInput');
-  const mediaCaption = document.getElementById('mediaCaption');
+  const nativeCameraPhoto = document.getElementById('nativeCameraPhoto');
+  const nativeCameraVideo = document.getElementById('nativeCameraVideo');
+  const previewBox = document.getElementById('uploadPreviewBox');
+  const previewImg = document.getElementById('previewImg');
+  const previewVideo = document.getElementById('previewVideo');
+  const previewFileBadge = document.getElementById('previewFileBadge');
+  const previewTitleInput = document.getElementById('previewTitleInput');
+  const previewCaptionInput = document.getElementById('previewCaptionInput');
+  const previewDateInput = document.getElementById('previewDateInput');
+  const previewCategorySelect = document.getElementById('previewCategorySelect');
+  const btnConfirmUpload = document.getElementById('btnConfirmUpload');
+  const btnCancelUpload = document.getElementById('btnCancelUpload');
 
   if (!dropZone || !fileInput) return;
+
+  if (previewDateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    previewDateInput.value = today;
+  }
+
+  [nativeCameraPhoto, nativeCameraVideo].forEach(inputEl => {
+    if (inputEl) {
+      inputEl.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFilesSelected(e.target.files);
+          e.target.value = '';
+        }
+      });
+    }
+  });
 
   ['dragenter', 'dragover'].forEach(eventName => {
     dropZone.addEventListener(eventName, (e) => {
@@ -561,59 +859,481 @@ function setupDropZoneAndUpload() {
   dropZone.addEventListener('drop', (e) => {
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleUploadedFiles(files, mediaCaption ? mediaCaption.value : '');
-      if (mediaCaption) mediaCaption.value = '';
+      handleFilesSelected(files);
     }
   });
 
   fileInput.addEventListener('change', (e) => {
     if (e.target.files.length > 0) {
-      handleUploadedFiles(e.target.files, mediaCaption ? mediaCaption.value : '');
-      if (mediaCaption) mediaCaption.value = '';
-      fileInput.value = '';
+      handleFilesSelected(e.target.files);
     }
   });
-}
 
-function handleUploadedFiles(files, customCaption) {
-  if (!db) {
-    alert('Database belum siap, silakan coba sesaat lagi.');
-    return;
+  function handleFilesSelected(files) {
+    const validFiles = Array.from(files).filter(file => {
+      return file.type.startsWith('image/') || file.type.startsWith('video/');
+    });
+
+    if (validFiles.length === 0) {
+      showToast('Pilih file berformat foto atau video (JPG, PNG, MP4, dsb).', 'info');
+      return;
+    }
+
+    pendingFilesQueue = validFiles;
+    currentPreviewIndex = 0;
+    showFilePreview(pendingFilesQueue[0]);
   }
 
-  const tx = db.transaction('moments', 'readwrite');
-  const store = tx.objectStore('moments');
+  async function showFilePreview(file) {
+    if (!previewBox || !file) return;
 
-  Array.from(files).forEach((file, index) => {
-    const isVideo = file.type.startsWith('video');
-    const isImage = file.type.startsWith('image');
+    const isVideo = file.type.startsWith('video/');
+    currentPreviewFileType = isVideo ? 'video' : 'image';
 
-    if (!isImage && !isVideo) return;
+    const fileSizeMb = (file.size / (1024 * 1024)).toFixed(2);
+    if (previewFileBadge) {
+      previewFileBadge.textContent = `${isVideo ? 'Video' : 'Foto'}: ${file.name} (${fileSizeMb} MB)`;
+    }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const record = {
-        name: file.name,
-        type: isVideo ? 'video' : 'image',
-        dataUrl: e.target.result,
-        caption: customCaption || file.name.replace(/\.[^/.]+$/, ""),
-        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-        timestamp: Date.now() + index
+    const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
+    if (previewTitleInput) {
+      previewTitleInput.value = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+    }
+
+    if (isVideo) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentPreviewDataUrl = e.target.result;
+        if (previewImg) previewImg.style.display = 'none';
+        if (previewVideo) {
+          previewVideo.src = currentPreviewDataUrl;
+          previewVideo.style.display = 'block';
+        }
+        previewBox.classList.add('active');
+        previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       };
+      reader.readAsDataURL(file);
+    } else {
+      const compressedUrl = await compressImageFile(file);
+      currentPreviewDataUrl = compressedUrl;
 
-      const addReq = store.add(record);
-      addReq.onsuccess = () => {
-        loadGalleryMoments();
-      };
-    };
-    reader.readAsDataURL(file);
+      if (previewVideo) {
+        previewVideo.pause();
+        previewVideo.style.display = 'none';
+      }
+      if (previewImg) {
+        previewImg.src = currentPreviewDataUrl;
+        previewImg.style.display = 'block';
+      }
+      previewBox.classList.add('active');
+      previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function closePreview() {
+    if (previewBox) previewBox.classList.remove('active');
+    if (previewVideo) {
+      previewVideo.pause();
+      previewVideo.src = '';
+    }
+    if (previewImg) previewImg.src = '';
+    if (fileInput) fileInput.value = '';
+    if (cameraInput) cameraInput.value = '';
+    pendingFilesQueue = [];
+    currentPreviewDataUrl = null;
+  }
+
+  if (btnCancelUpload) {
+    btnCancelUpload.addEventListener('click', closePreview);
+  }
+
+  if (btnConfirmUpload) {
+    btnConfirmUpload.addEventListener('click', () => {
+      if (!currentPreviewDataUrl || pendingFilesQueue.length === 0) return;
+
+      const file = pendingFilesQueue[currentPreviewIndex];
+      const title = previewTitleInput ? previewTitleInput.value.trim() : '';
+      const caption = previewCaptionInput ? previewCaptionInput.value.trim() : '';
+      const rawDate = previewDateInput ? previewDateInput.value : '';
+      const category = previewCategorySelect ? previewCategorySelect.value : 'user';
+
+      let formattedDate = 'Hari Ini';
+      if (rawDate) {
+        try {
+          const parts = rawDate.split('-');
+          const d = new Date(parts[0], parts[1] - 1, parts[2]);
+          formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) {
+          formattedDate = rawDate;
+        }
+      }
+
+      btnConfirmUpload.disabled = true;
+      btnConfirmUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+      saveNewUploadedMoment({
+        file: file,
+        dataUrl: currentPreviewDataUrl,
+        type: currentPreviewFileType,
+        title: title || file.name.replace(/\.[^/.]+$/, ""),
+        caption: caption || 'Momen manis yang diabadikan bersama.',
+        date: formattedDate,
+        category: category
+      });
+
+      setTimeout(() => {
+        btnConfirmUpload.disabled = false;
+        btnConfirmUpload.innerHTML = '<i class="fa-solid fa-heart-circle-plus"></i> Simpan ke Galeri Cinta';
+        closePreview();
+      }, 300);
+    });
+  }
+}
+
+function saveNewUploadedMoment({ file, dataUrl, type, title, caption, date, category }) {
+  const newId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  const momentItem = {
+    id: newId,
+    name: file.name,
+    type: type,
+    src: dataUrl,
+    thumb: dataUrl,
+    title: title,
+    caption: caption,
+    date: date,
+    year: category || 'user',
+    timestamp: Date.now(),
+    isPreset: false
+  };
+
+  const localMoments = getStoredUserMoments();
+  localMoments.unshift(momentItem);
+  persistUserMoments(localMoments);
+
+  if (db) {
+    try {
+      const tx = db.transaction('moments', 'readwrite');
+      const store = tx.objectStore('moments');
+      store.add(momentItem);
+    } catch (err) {
+      console.warn('IndexedDB write warning:', err);
+    }
+  }
+
+  allMomentsCache = [momentItem, ...allMomentsCache.filter(m => m.id !== newId)];
+
+  applyFilterAndRender();
+
+  if (window.triggerParticleBurst) {
+    window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+  }
+
+  showToast(`Momen "${escapeHtml(title)}" berhasil disimpan ke Galeri Cinta! ❤️💙`, 'success');
+
+  setTimeout(() => {
+    const newCard = document.querySelector(`.moment-card[data-id="${newId}"]`);
+    if (newCard) {
+      newCard.classList.add('new-moment-highlight');
+      newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 100);
+}
+
+function setDirectMediaPreview({ type, dataUrl, defaultTitle, fileInfo }) {
+  const previewBox = document.getElementById('uploadPreviewBox');
+  const previewImg = document.getElementById('previewImg');
+  const previewVideo = document.getElementById('previewVideo');
+  const previewFileBadge = document.getElementById('previewFileBadge');
+  const previewTitleInput = document.getElementById('previewTitleInput');
+  const previewDateInput = document.getElementById('previewDateInput');
+
+  if (!previewBox) return;
+
+  currentPreviewFileType = type;
+  currentPreviewDataUrl = dataUrl;
+  pendingFilesQueue = [{ name: defaultTitle + (type === 'video' ? '.mp4' : '.jpg') }];
+  currentPreviewIndex = 0;
+
+  if (previewFileBadge) {
+    previewFileBadge.textContent = fileInfo;
+  }
+  if (previewTitleInput) {
+    previewTitleInput.value = defaultTitle;
+  }
+  if (previewDateInput && !previewDateInput.value) {
+    previewDateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  if (type === 'video') {
+    if (previewImg) previewImg.style.display = 'none';
+    if (previewVideo) {
+      previewVideo.src = dataUrl;
+      previewVideo.style.display = 'block';
+    }
+  } else {
+    if (previewVideo) {
+      previewVideo.pause();
+      previewVideo.style.display = 'none';
+    }
+    if (previewImg) {
+      previewImg.src = dataUrl;
+      previewImg.style.display = 'block';
+    }
+  }
+
+  previewBox.classList.add('active');
+  previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ================= LIVE DEVICE CAMERA CONTROLLER ================= */
+let currentCameraStream = null;
+let currentFacingMode = 'user';
+let activeCameraMode = 'photo';
+let mediaRecorder = null;
+let recordedVideoChunks = [];
+let recordTimerInterval = null;
+let recordSeconds = 0;
+
+function initLiveCameraFeature() {
+  const openCameraBtn = document.getElementById('openLiveCameraBtn');
+  const cameraModal = document.getElementById('cameraModal');
+  const cameraBackdrop = document.getElementById('cameraBackdrop');
+  const cameraCloseX = document.getElementById('cameraCloseX');
+  const cameraCancelBtn = document.getElementById('camCancelBtn');
+  const videoFeed = document.getElementById('cameraVideoFeed');
+  const canvas = document.getElementById('cameraCanvas');
+  const flashOverlay = document.getElementById('cameraFlashOverlay');
+  const tabPhoto = document.getElementById('camTabPhoto');
+  const tabVideo = document.getElementById('camTabVideo');
+  const capturePhotoBtn = document.getElementById('camCapturePhotoBtn');
+  const recordVideoBtn = document.getElementById('camRecordVideoBtn');
+  const switchFacingBtn = document.getElementById('camSwitchFacingBtn');
+  const recBadge = document.getElementById('cameraRecordingBadge');
+  const timerText = document.getElementById('cameraTimerText');
+  const nativePhotoInput = document.getElementById('nativeCameraPhoto');
+  const nativeVideoInput = document.getElementById('nativeCameraVideo');
+
+  if (!openCameraBtn || !cameraModal) return;
+
+  openCameraBtn.addEventListener('click', async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      cameraModal.classList.add('active');
+      cameraModal.setAttribute('aria-hidden', 'false');
+      setCameraMode('photo');
+      const ok = await startCameraStream(currentFacingMode, false);
+      if (!ok) {
+        closeCamera();
+        if (nativePhotoInput) nativePhotoInput.click();
+      }
+    } else if (nativePhotoInput) {
+      nativePhotoInput.click();
+    }
   });
 
-  tx.oncomplete = () => {
-    if (window.triggerParticleBurst) {
-      window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 40);
+  [cameraCloseX, cameraCancelBtn, cameraBackdrop].forEach(el => {
+    if (el) el.addEventListener('click', closeCamera);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && cameraModal.classList.contains('active')) {
+      closeCamera();
     }
-  };
+  });
+
+  if (tabPhoto) {
+    tabPhoto.addEventListener('click', () => setCameraMode('photo'));
+  }
+  if (tabVideo) {
+    tabVideo.addEventListener('click', () => setCameraMode('video'));
+  }
+
+  function setCameraMode(mode) {
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    activeCameraMode = mode;
+    if (tabPhoto) {
+      tabPhoto.classList.toggle('active', mode === 'photo');
+      tabPhoto.setAttribute('aria-selected', mode === 'photo' ? 'true' : 'false');
+    }
+    if (tabVideo) {
+      tabVideo.classList.toggle('active', mode === 'video');
+      tabVideo.setAttribute('aria-selected', mode === 'video' ? 'true' : 'false');
+    }
+    if (capturePhotoBtn) capturePhotoBtn.style.display = mode === 'photo' ? 'flex' : 'none';
+    if (recordVideoBtn) recordVideoBtn.style.display = mode === 'video' ? 'flex' : 'none';
+
+    if (cameraModal.classList.contains('active')) {
+      startCameraStream(currentFacingMode, mode === 'video');
+    }
+  }
+
+  if (switchFacingBtn) {
+    switchFacingBtn.addEventListener('click', async () => {
+      currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+      await startCameraStream(currentFacingMode, activeCameraMode === 'video');
+    });
+  }
+
+  if (capturePhotoBtn) {
+    capturePhotoBtn.addEventListener('click', () => {
+      if (!videoFeed || !canvas) return;
+
+      const w = videoFeed.videoWidth || 1280;
+      const h = videoFeed.videoHeight || 720;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoFeed, 0, 0, w, h);
+
+      if (flashOverlay) {
+        flashOverlay.classList.remove('flash');
+        void flashOverlay.offsetWidth;
+        flashOverlay.classList.add('flash');
+      }
+
+      const photoDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      closeCamera();
+
+      const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      setDirectMediaPreview({
+        type: 'image',
+        dataUrl: photoDataUrl,
+        defaultTitle: `Foto Kamera Kita (${timeStr})`,
+        fileInfo: `Kamera Perangkat (${Math.round(photoDataUrl.length / 1024 / 1.33)} KB)`
+      });
+    });
+  }
+
+  if (recordVideoBtn) {
+    recordVideoBtn.addEventListener('click', () => {
+      if (!currentCameraStream) return;
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopVideoRecording();
+      } else {
+        startVideoRecording();
+      }
+    });
+  }
+
+  function startVideoRecording() {
+    if (!currentCameraStream) return;
+    recordedVideoChunks = [];
+
+    let mimeType = 'video/webm';
+    if (MediaRecorder.isTypeSupported('video/mp4')) {
+      mimeType = 'video/mp4';
+    } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+      mimeType = 'video/webm;codecs=vp9,opus';
+    }
+
+    try {
+      mediaRecorder = new MediaRecorder(currentCameraStream, { mimeType: mimeType });
+    } catch (e) {
+      try {
+        mediaRecorder = new MediaRecorder(currentCameraStream);
+      } catch (err) {
+        showToast('Perekaman video langsung tidak didukung browser ini.', 'info');
+        if (nativeVideoInput) nativeVideoInput.click();
+        return;
+      }
+    }
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedVideoChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      clearInterval(recordTimerInterval);
+      if (recBadge) recBadge.style.display = 'none';
+      if (recordVideoBtn) recordVideoBtn.classList.remove('recording');
+
+      const blob = new Blob(recordedVideoChunks, { type: mediaRecorder.mimeType || 'video/mp4' });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const videoDataUrl = reader.result;
+        closeCamera();
+        const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        setDirectMediaPreview({
+          type: 'video',
+          dataUrl: videoDataUrl,
+          defaultTitle: `Video Rekaman Kita (${timeStr})`,
+          fileInfo: `Rekaman Kamera (${(blob.size / 1024 / 1024).toFixed(2)} MB)`
+        });
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    mediaRecorder.start(250);
+    recordSeconds = 0;
+    if (timerText) timerText.textContent = '00:00';
+    if (recBadge) recBadge.style.display = 'flex';
+    if (recordVideoBtn) recordVideoBtn.classList.add('recording');
+
+    recordTimerInterval = setInterval(() => {
+      recordSeconds++;
+      const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+      const secs = String(recordSeconds % 60).padStart(2, '0');
+      if (timerText) timerText.textContent = `${mins}:${secs}`;
+
+      if (recordSeconds >= 60) {
+        stopVideoRecording();
+      }
+    }, 1000);
+  }
+
+  function stopVideoRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+  }
+
+  async function startCameraStream(facingMode, withAudio) {
+    stopCameraStream();
+    try {
+      const constraints = {
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: withAudio
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      currentCameraStream = stream;
+      if (videoFeed) {
+        videoFeed.srcObject = stream;
+        await videoFeed.play();
+      }
+      return true;
+    } catch (err) {
+      console.warn('Gagal mengakses kamera:', err);
+      return false;
+    }
+  }
+
+  function stopCameraStream() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      try { mediaRecorder.stop(); } catch (e) {}
+    }
+    clearInterval(recordTimerInterval);
+    if (currentCameraStream) {
+      currentCameraStream.getTracks().forEach(track => track.stop());
+      currentCameraStream = null;
+    }
+    if (videoFeed) {
+      videoFeed.srcObject = null;
+    }
+  }
+
+  function closeCamera() {
+    stopCameraStream();
+    if (cameraModal) {
+      cameraModal.classList.remove('active');
+      cameraModal.setAttribute('aria-hidden', 'true');
+    }
+  }
 }
 
 /* 6. Curated 24 Anniversary Photos (March 2025 - October 2026) */
@@ -948,21 +1668,30 @@ function initHeroPhotoShowcase() {
   const featuredItems = HERO_FEATURED_IDS.map(id => ASET_FOTO_ITEMS.find(item => item.id === id)).filter(Boolean);
   if (featuredItems.length === 0) return;
 
-  thumbsRow.innerHTML = '';
-  featuredItems.forEach((item, index) => {
-    const btn = document.createElement('button');
-    btn.className = `hero-thumb-btn ${index === 0 ? 'active' : ''}`;
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-label', `Lihat sorotan ${item.title}`);
-    btn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-    btn.innerHTML = `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.src}'">`;
-
-    btn.addEventListener('click', () => {
-      setHeroPhoto(index);
+  const existingButtons = thumbsRow.querySelectorAll('.hero-thumb-btn');
+  if (existingButtons.length === featuredItems.length) {
+    existingButtons.forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        setHeroPhoto(index);
+      });
     });
+  } else {
+    thumbsRow.innerHTML = '';
+    featuredItems.forEach((item, index) => {
+      const btn = document.createElement('button');
+      btn.className = `hero-thumb-btn ${index === 0 ? 'active' : ''}`;
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-label', `Lihat sorotan ${item.title}`);
+      btn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+      btn.innerHTML = `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.src}'">`;
 
-    thumbsRow.appendChild(btn);
-  });
+      btn.addEventListener('click', () => {
+        setHeroPhoto(index);
+      });
+
+      thumbsRow.appendChild(btn);
+    });
+  }
 
   function setHeroPhoto(index) {
     currentHeroIndex = index;
@@ -1016,6 +1745,25 @@ function initGalleryHighlights() {
     { id: 'preset_24', tag: '7 Tahun Cinta', title: 'Menuju 16 Des 2026', item: ASET_FOTO_ITEMS[23] }
   ];
 
+  const existingCards = container.querySelectorAll('.highlight-card');
+  if (existingCards.length === milestones.length) {
+    existingCards.forEach((card, index) => {
+      const m = milestones[index];
+      if (!m || !m.item) return;
+      function trigger() {
+        openLightbox(m.item.id);
+      }
+      card.addEventListener('click', trigger);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          trigger();
+        }
+      });
+    });
+    return;
+  }
+
   container.innerHTML = '';
   milestones.forEach(m => {
     if (!m.item) return;
@@ -1052,9 +1800,10 @@ function initGalleryHighlights() {
 
 /* Gallery Moments Loader & Renderer */
 function loadGalleryMoments() {
+  const localMoments = getStoredUserMoments();
+
   if (!db) {
-    // If DB is still initializing, render preset photos immediately
-    allMomentsCache = [...ASET_FOTO_ITEMS];
+    allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
     return;
   }
@@ -1065,35 +1814,46 @@ function loadGalleryMoments() {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      const userRaw = request.result || [];
-      const userMoments = userRaw.map(u => ({
+      const dbRaw = request.result || [];
+      const dbMoments = dbRaw.map(u => ({
         id: u.id,
-        src: u.dataUrl,
-        thumb: u.dataUrl,
-        title: u.caption || u.name || 'Momen Spesial',
+        src: u.dataUrl || u.src,
+        thumb: u.dataUrl || u.thumb || u.src,
+        title: u.title || u.caption || u.name || 'Momen Spesial',
         caption: u.caption || 'Kenangan manis yang diunggah ke dalam web.',
         date: u.date || 'Unggahan Baru',
-        year: 'user',
+        year: u.year || 'user',
         timestamp: u.timestamp || Date.now(),
         type: u.type || 'image',
         isPreset: false
       }));
 
-      allMomentsCache = [...userMoments, ...ASET_FOTO_ITEMS];
+      const mergedMap = new Map();
+      localMoments.forEach(m => mergedMap.set(String(m.id), m));
+      dbMoments.forEach(m => mergedMap.set(String(m.id), m));
+      const combinedUserMoments = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      allMomentsCache = [...combinedUserMoments, ...ASET_FOTO_ITEMS];
       applyFilterAndRender();
     };
 
     request.onerror = () => {
-      allMomentsCache = [...ASET_FOTO_ITEMS];
+      allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
       applyFilterAndRender();
     };
   } catch (err) {
-    allMomentsCache = [...ASET_FOTO_ITEMS];
+    allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
   }
 }
 
 function applyFilterAndRender() {
+  const userCount = allMomentsCache.filter(item => !item.isPreset).length;
+  const userFilterBtn = document.querySelector('.filter-btn[data-filter="user"]');
+  if (userFilterBtn) {
+    userFilterBtn.innerHTML = `<i class="fa-solid fa-sparkles"></i> Unggahan Baru (${userCount})`;
+  }
+
   currentVisibleMoments = allMomentsCache.filter(item => {
     if (currentFilter === 'all') return true;
     if (currentFilter === '2025') return item.year === '2025';
@@ -1127,11 +1887,12 @@ function renderGalleryGrid(moments) {
     card.dataset.id = item.id;
 
     const mediaHtml = item.type === 'video'
-      ? `<video src="${item.src}" preload="metadata"></video>`
+      ? `<video src="${item.src}" preload="metadata" muted playsinline></video>`
       : `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
 
     const badgeText = item.isPreset ? (item.year || 'Kenangan') : 'Unggahan Baru';
     const badgeIcon = item.type === 'video' ? 'fa-video' : (item.isPreset ? 'fa-heart' : 'fa-sparkles');
+    const overlayIcon = item.type === 'video' ? 'fa-play' : 'fa-expand';
 
     card.innerHTML = `
       <div class="moment-media" role="button" tabindex="0" aria-label="Buka foto ${escapeHtml(item.title)} di resolusi penuh">
@@ -1140,7 +1901,7 @@ function renderGalleryGrid(moments) {
           <i class="fa-solid ${badgeIcon}"></i> ${badgeText}
         </span>
         <div class="moment-overlay" aria-hidden="true">
-          <i class="fa-solid fa-expand"></i>
+          <i class="fa-solid ${overlayIcon}"></i>
         </div>
       </div>
       <div class="moment-details">
@@ -1149,7 +1910,7 @@ function renderGalleryGrid(moments) {
         <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
           <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> ${item.date}</span>
           ${!item.isPreset ? `
-            <button class="moment-del-btn" onclick="deleteMoment(${item.id})" title="Hapus Momen Tambahan" aria-label="Hapus momen tambahan ini">
+            <button class="moment-del-btn" onclick="deleteMoment('${item.id}')" title="Hapus Momen Tambahan" aria-label="Hapus momen tambahan ini">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           ` : `
@@ -1180,17 +1941,27 @@ function renderGalleryGrid(moments) {
 }
 
 window.deleteMoment = function(id) {
-  if (!confirm('Apakah kamu yakin ingin menghapus momen tambahan ini?')) return;
-  if (!db) return;
+  if (!confirm('Apakah kamu yakin ingin menghapus momen kenangan ini?')) return;
 
-  const tx = db.transaction('moments', 'readwrite');
-  const store = tx.objectStore('moments');
-  store.delete(id);
+  let localList = getStoredUserMoments();
+  localList = localList.filter(m => String(m.id) !== String(id));
+  persistUserMoments(localList);
 
-  tx.oncomplete = () => {
-    closeLightbox();
-    loadGalleryMoments();
-  };
+  if (db) {
+    try {
+      const tx = db.transaction('moments', 'readwrite');
+      const store = tx.objectStore('moments');
+      store.delete(id);
+    } catch (err) {
+      console.warn('IndexedDB delete warning:', err);
+    }
+  }
+
+  allMomentsCache = allMomentsCache.filter(m => String(m.id) !== String(id));
+
+  closeLightbox();
+  applyFilterAndRender();
+  showToast('Momen kenangan berhasil dihapus.', 'info');
 };
 
 function setupGalleryFilters() {
@@ -1208,13 +1979,21 @@ function setupGalleryFilters() {
   if (clearAllBtn) {
     clearAllBtn.addEventListener('click', () => {
       if (!confirm('Hapus seluruh foto & video tambahan yang Anda upload secara mandiri dari browser ini? (24 foto kenangan utama tidak akan terhapus)')) return;
-      if (!db) return;
-      const tx = db.transaction('moments', 'readwrite');
-      tx.objectStore('moments').clear();
-      tx.oncomplete = () => {
-        loadGalleryMoments();
-        alert('Seluruh momen tambahan telah dibersihkan!');
-      };
+
+      persistUserMoments([]);
+
+      if (db) {
+        try {
+          const tx = db.transaction('moments', 'readwrite');
+          tx.objectStore('moments').clear();
+        } catch (err) {
+          console.warn('IndexedDB clear warning:', err);
+        }
+      }
+
+      allMomentsCache = [...ASET_FOTO_ITEMS];
+      applyFilterAndRender();
+      showToast('Seluruh unggahan baru berhasil dibersihkan!', 'info');
     });
   }
 }
@@ -1299,8 +2078,12 @@ function lightboxNext() {
   renderLightboxCurrent();
 }
 
-window.openLightbox = function(id) {
-  const searchList = currentVisibleMoments.length > 0 ? currentVisibleMoments : allMomentsCache;
+window.openLightbox = function(id, customList = null) {
+  const searchList = (customList && customList.length > 0)
+    ? customList
+    : (currentVisibleMoments.length > 0 
+      ? currentVisibleMoments 
+      : (allMomentsCache.length > 0 ? allMomentsCache : ASET_FOTO_ITEMS));
   const foundIndex = searchList.findIndex(item => String(item.id) === String(id));
 
   if (foundIndex !== -1) {
@@ -1440,51 +2223,208 @@ function initLetterFeatures() {
   }
 }
 
-/* 9. Wishes for Her (LocalStorage Persistence) */
+/* 9. Papan Pesan Cinta (Interactive Message Board & LocalStorage) */
 function initWishesFeature() {
   const wishForm = document.getElementById('wishForm');
   const wishAuthor = document.getElementById('wishAuthor');
   const wishMessage = document.getElementById('wishMessage');
   const wishesList = document.getElementById('wishesList');
+  const boardCountBadge = document.getElementById('boardCountBadge');
+  const btnClearAllWishes = document.getElementById('btnClearAllWishes');
 
   const STORAGE_KEY = 'anniversary_wishes_list';
 
   function getStoredWishes() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const list = JSON.parse(raw);
+      return Array.isArray(list) ? list.map((w, idx) => ({
+        id: w.id || ('wish_' + (w.timestamp || Date.now()) + '_' + idx),
+        author: w.author || 'Anonim',
+        text: w.text || '',
+        time: w.time || '16 Des 2026',
+        likes: w.likes || 1,
+        liked: !!w.liked
+      })) : [];
     } catch {
       return [];
     }
   }
 
   function saveWishes(wishes) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+    } catch (e) {
+      console.warn('Gagal menyimpan wishes:', e);
+    }
   }
 
-  function renderWishes() {
+  function renderWishes(highlightId = null) {
     if (!wishesList) return;
     const wishes = getStoredWishes();
 
+    if (boardCountBadge) {
+      boardCountBadge.innerHTML = `<i class="fa-solid fa-heart text-red"></i> ${wishes.length} Pesan Tertempel`;
+    }
+
+    if (btnClearAllWishes) {
+      btnClearAllWishes.style.display = wishes.length > 0 ? 'inline-flex' : 'none';
+    }
+
     if (wishes.length === 0) {
       wishesList.innerHTML = `
-        <div style="text-align: center; color: #94a3b8; font-size: 0.88rem; padding: 15px;">
-          Belum ada pesan harapan yang ditulis. Jadilah yang pertama menuliskan kata cinta di sini! 💕
+        <div class="wishes-empty-board">
+          <div class="wishes-empty-icon" aria-hidden="true">
+            <i class="fa-solid fa-envelope-open-text"></i>
+          </div>
+          <h4 class="wishes-empty-title">Papan Pesan Masih Terbuka & Bersih</h4>
+          <p class="wishes-empty-desc">
+            Tuliskan kata-kata manis, doa, atau harapan indahmu di formulir di atas. Pesanmu akan tertempel abadi di Papan Pesan Cinta ini!
+          </p>
+          <button type="button" class="btn-insert-sample-wish" id="btnInsertSampleWish">
+            <i class="fa-solid fa-heart text-red"></i> Tempelkan Pesan Contoh Romantis
+          </button>
         </div>
       `;
+
+      const sampleBtn = document.getElementById('btnInsertSampleWish');
+      if (sampleBtn) {
+        sampleBtn.addEventListener('click', () => {
+          const sampleWishes = [
+            {
+              id: 'sample_firhan_' + Date.now(),
+              author: 'Firhan',
+              text: 'Terima kasih sudah menjadi wanita terhebat dan terindah selama 7 tahun ini. Aku berjanji akan selalu ada di sampingmu di setiap langkah perjalanan kita menuju selamanya ❤️',
+              time: '16 Des 2026, 00:00',
+              likes: 7
+            },
+            {
+              id: 'sample_sayang_' + Date.now() + 1,
+              author: 'Sayangku',
+              text: 'Selamat 7 tahun hubungan kita sayang! Semoga cinta kita selalu hangat, penuh tawa, dan selalu diberkahi kebahagiaan hingga maut memisahkan 💙✨',
+              time: '16 Des 2026, 00:07',
+              likes: 7
+            }
+          ];
+          saveWishes(sampleWishes);
+          renderWishes(sampleWishes[0].id);
+          if (window.triggerParticleBurst) {
+            window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+          }
+          if (window.showToast) {
+            showToast('Pesan contoh romantis berhasil tertempel di papan! 💕', 'success');
+          }
+        });
+      }
       return;
     }
 
-    wishesList.innerHTML = wishes.map(w => `
-      <div class="wish-item">
-        <div class="wish-item-header">
-          <span>${escapeHtml(w.author)} ❤️</span>
-          <span class="wish-item-time">${w.time}</span>
+    wishesList.innerHTML = wishes.map(w => {
+      const isRed = w.author.toLowerCase().includes('firhan') || w.author.toLowerCase().includes('cowok');
+      const avatarColor = isRed ? 'red' : 'blue';
+      const initial = (w.author.trim()[0] || '❤️').toUpperCase();
+      const isHighlight = highlightId && w.id === highlightId;
+
+      return `
+        <div class="wish-note-card ${isHighlight ? 'new-wish-highlight' : ''}" data-id="${w.id}">
+          <div class="wish-pin" aria-hidden="true">
+            <i class="fa-solid fa-thumbtack"></i>
+          </div>
+          <div class="wish-note-top">
+            <div class="wish-author-info">
+              <div class="wish-avatar ${avatarColor}">${initial}</div>
+              <div class="wish-author-meta">
+                <span class="wish-author-name">${escapeHtml(w.author)}</span>
+                <span class="wish-item-time"><i class="fa-regular fa-clock"></i> ${escapeHtml(w.time)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="wish-note-body">${escapeHtml(w.text)}</div>
+          <div class="wish-note-footer">
+            <button type="button" class="btn-wish-like ${w.liked ? 'liked' : ''}" data-id="${w.id}" aria-label="Beri tanda cinta pada pesan ini">
+              <i class="fa-solid fa-heart"></i> <span class="like-num">${w.likes || 1}</span>
+            </button>
+            <button type="button" class="btn-wish-delete" data-id="${w.id}" title="Hapus pesan ini dari papan" aria-label="Hapus pesan ini">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
         </div>
-        <div class="wish-item-content">${escapeHtml(w.text)}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    // Highlight scroll if needed
+    if (highlightId) {
+      setTimeout(() => {
+        const el = document.querySelector(`.wish-note-card[data-id="${highlightId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
   }
 
+  // Interactive Likes and Deletes via delegation
+  if (wishesList) {
+    wishesList.addEventListener('click', (e) => {
+      // Like button click
+      const likeBtn = e.target.closest('.btn-wish-like');
+      if (likeBtn) {
+        const id = likeBtn.getAttribute('data-id');
+        const wishes = getStoredWishes();
+        const target = wishes.find(w => w.id === id);
+        if (target) {
+          if (!target.liked) {
+            target.likes = (target.likes || 0) + 1;
+            target.liked = true;
+            likeBtn.classList.add('liked');
+            const numEl = likeBtn.querySelector('.like-num');
+            if (numEl) numEl.textContent = target.likes;
+            if (window.triggerParticleBurst) {
+              const rect = likeBtn.getBoundingClientRect();
+              window.triggerParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 20);
+            }
+          } else {
+            target.likes = Math.max(1, (target.likes || 1) - 1);
+            target.liked = false;
+            likeBtn.classList.remove('liked');
+            const numEl = likeBtn.querySelector('.like-num');
+            if (numEl) numEl.textContent = target.likes;
+          }
+          saveWishes(wishes);
+        }
+        return;
+      }
+
+      // Delete button click
+      const delBtn = e.target.closest('.btn-wish-delete');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        if (confirm('Apakah kamu yakin ingin menghapus pesan cinta ini dari papan?')) {
+          let wishes = getStoredWishes();
+          wishes = wishes.filter(w => w.id !== id);
+          saveWishes(wishes);
+          renderWishes();
+          if (window.showToast) {
+            showToast('Pesan berhasil dihapus dari papan.', 'info');
+          }
+        }
+      }
+    });
+  }
+
+  // Clear all button click
+  if (btnClearAllWishes) {
+    btnClearAllWishes.addEventListener('click', () => {
+      if (confirm('Apakah kamu yakin ingin membersihkan dan mengosongkan semua pesan di papan?')) {
+        saveWishes([]);
+        renderWishes();
+        if (window.showToast) {
+          showToast('Papan pesan telah dibersihkan.', 'info');
+        }
+      }
+    });
+  }
+
+  // Form Submission
   if (wishForm) {
     wishForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1493,22 +2433,29 @@ function initWishesFeature() {
 
       if (!author || !message) return;
 
+      const newId = 'wish_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
       const wishes = getStoredWishes();
-      wishes.unshift({
-        author,
+      const newWish = {
+        id: newId,
+        author: author,
         text: message,
-        time: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-      });
+        time: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        likes: 1,
+        liked: true
+      };
 
+      wishes.unshift(newWish);
       saveWishes(wishes);
       wishAuthor.value = '';
       wishMessage.value = '';
-      renderWishes();
+      renderWishes(newId);
 
       if (window.triggerParticleBurst) {
-        window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 40);
+        window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
       }
-      alert('Pesan manismu berhasil disimpan di perayaan cinta ini! 💌');
+      if (window.showToast) {
+        showToast(`Pesan dari "${escapeHtml(author)}" berhasil tertempel di Papan Pesan Cinta! 💌✨`, 'success');
+      }
     });
   }
 
@@ -1586,4 +2533,3 @@ function initScrollSpyAndNav() {
   window.addEventListener('scroll', handleScrollSpy, { passive: true });
   handleScrollSpy();
 }
-
