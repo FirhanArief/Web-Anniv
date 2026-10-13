@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWishesFeature();
   initClickSparkles();
   initGlobalKeyboardShortcuts();
+  initScrollSpyAndNav();
 });
 
 /* 1. Background Particle Canvas (Romantic Hearts & Joyful Bubbles) */
@@ -244,6 +245,7 @@ function initMusicPlayer() {
   const playIcon = document.getElementById('playIcon');
   const vinylDisc = document.getElementById('vinylDisc');
   const floatingMusicBtn = document.getElementById('floatingMusicBtn');
+  const navMusicPill = document.getElementById('navMusicPill');
   const progressBar = document.getElementById('progressBar');
   const progressContainer = document.getElementById('progressContainer');
   const currentTimeEl = document.getElementById('currentTime');
@@ -306,6 +308,11 @@ function initMusicPlayer() {
       }
       if (vinylDisc) vinylDisc.classList.add('playing');
       if (floatingMusicBtn) floatingMusicBtn.classList.add('active');
+      if (navMusicPill) {
+        navMusicPill.classList.add('playing');
+        const txt = navMusicPill.querySelector('.nav-pill-text');
+        if (txt) txt.textContent = 'Pause Lagu';
+      }
     } else {
       if (playIcon) {
         playIcon.classList.remove('fa-pause');
@@ -313,10 +320,16 @@ function initMusicPlayer() {
       }
       if (vinylDisc) vinylDisc.classList.remove('playing');
       if (floatingMusicBtn) floatingMusicBtn.classList.remove('active');
+      if (navMusicPill) {
+        navMusicPill.classList.remove('playing');
+        const txt = navMusicPill.querySelector('.nav-pill-text');
+        if (txt) txt.textContent = 'Putar Lagu';
+      }
     }
   }
 
   if (mainPlayBtn) mainPlayBtn.addEventListener('click', togglePlay);
+  if (navMusicPill) navMusicPill.addEventListener('click', togglePlay);
 
   if (floatingMusicBtn) {
     floatingMusicBtn.addEventListener('click', () => {
@@ -363,13 +376,15 @@ function initMusicPlayer() {
   }
 
   if (progressContainer) {
-    progressContainer.addEventListener('click', (e) => {
-      const width = progressContainer.clientWidth;
-      const clickX = e.offsetX;
-      if (audio && audio.duration) {
-        audio.currentTime = (clickX / width) * audio.duration;
-      }
-    });
+    function seekAudio(e) {
+      if (!audio || !audio.duration) return;
+      const rect = progressContainer.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : undefined);
+      if (clientX === undefined) return;
+      const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+      audio.currentTime = (clickX / rect.width) * audio.duration;
+    }
+    progressContainer.addEventListener('click', seekAudio);
   }
 
   if (rewindBtn && audio) {
@@ -1518,13 +1533,57 @@ function initGlobalKeyboardShortcuts() {
   });
 }
 
-/* Utility to sanitize text */
-function escapeHtml(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+/* 11. Responsive Navigation & ScrollSpy for Mobile & Laptop */
+function initScrollSpyAndNav() {
+  const sections = document.querySelectorAll('main section[id]');
+  const desktopLinks = document.querySelectorAll('.nav-links a');
+  const mobileLinks = document.querySelectorAll('.mobile-bottom-nav .mobile-nav-link');
+
+  // Smooth scroll with calibrated header offset for mobile vs laptop
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const targetId = this.getAttribute('href');
+      if (targetId && targetId !== '#') {
+        const targetEl = document.querySelector(targetId);
+        if (targetEl) {
+          e.preventDefault();
+          const headerOffset = window.innerWidth < 860 ? 60 : 80;
+          const targetTop = targetEl.getBoundingClientRect().top + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: targetTop,
+            behavior: 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  // Dynamic Scrollspy Highlight
+  function handleScrollSpy() {
+    const scrollPos = window.scrollY + (window.innerWidth < 860 ? 120 : 160);
+    let activeId = '';
+
+    sections.forEach(sec => {
+      const top = sec.offsetTop;
+      const height = sec.offsetHeight;
+      if (scrollPos >= top && scrollPos < top + height) {
+        activeId = sec.getAttribute('id');
+      }
+    });
+
+    if (activeId) {
+      desktopLinks.forEach(link => {
+        const isMatch = link.getAttribute('href') === `#${activeId}`;
+        link.classList.toggle('active', isMatch);
+      });
+      mobileLinks.forEach(link => {
+        const isMatch = link.dataset.section === activeId;
+        link.classList.toggle('active', isMatch);
+      });
+    }
+  }
+
+  window.addEventListener('scroll', handleScrollSpy, { passive: true });
+  handleScrollSpy();
 }
+

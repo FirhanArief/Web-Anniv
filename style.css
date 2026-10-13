@@ -355,19 +355,20 @@ body {
 
 .nav-links {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  align-items: center;
 }
 
 .nav-links a {
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   transition: var(--transition-smooth);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 20px;
 }
 
@@ -375,6 +376,98 @@ body {
   color: white;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 10px var(--red-glow);
+}
+
+.nav-links a.active {
+  color: white;
+  background: var(--gradient-love-joy);
+  box-shadow: 0 0 15px rgba(230, 57, 70, 0.45);
+}
+
+/* Quick Music Button on Navbar */
+.nav-music-pill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.nav-music-pill:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--blue-sky);
+}
+
+.nav-music-pill.playing {
+  background: var(--gradient-love-joy);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 0 12px var(--red-glow);
+}
+
+/* Base styles for Mobile Bottom Navigation Bar (Hidden on Laptop) */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(13, 14, 28, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 1000;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)) 4px;
+  box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 6px 8px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  flex: 1;
+  text-align: center;
+}
+
+.mobile-nav-link i {
+  font-size: 1.15rem;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.mobile-nav-link.active {
+  color: #fff;
+}
+
+.mobile-nav-link.active i {
+  color: var(--red-light);
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 8px rgba(230, 57, 70, 0.6));
+}
+
+.mobile-nav-link.active span {
+  color: var(--blue-sky);
+  font-weight: 600;
 }
 
 /* Sections Global */
@@ -1179,9 +1272,15 @@ body {
   border-radius: 20px;
 }
 
-.reason-card.flipped .card-inner,
-.reason-card:hover .card-inner {
+.reason-card.flipped .card-inner {
   transform: rotateY(180deg);
+}
+
+/* Hover flip only on devices that support fine cursor hover, not on mobile touch */
+@media (hover: hover) and (pointer: fine) {
+  .reason-card:hover .card-inner {
+    transform: rotateY(180deg);
+  }
 }
 
 .card-front, .card-back {
@@ -2091,45 +2190,551 @@ body {
 }
 
 /* ==========================================================
-   RESPONSIVE DESIGN (HP & TABLET)
+   RESPONSIVE DESIGN (LAPTOP, TABLET, & HANDPHONE)
    ========================================================== */
-@media (max-width: 900px) {
-  .hero-title { font-size: 2.5rem; }
-  .music-card { flex-direction: column; text-align: center; }
-  .vinyl-container { margin: 0 auto; }
-  .song-quote { border-left: none; border-top: 2px solid var(--blue-primary); padding-top: 10px; padding-left: 0; }
-  .buttons-row { justify-content: center; }
-  .extra-controls { justify-content: center; }
-  .reasons-grid { grid-template-columns: repeat(2, 1fr); }
-  .reason-card-grand { grid-column: span 2; }
-  .highlights-strip { grid-template-columns: repeat(2, 1fr); }
+
+/* 1. Large Laptops & Desktops (>= 1200px) */
+@media (min-width: 1200px) {
+  .section {
+    max-width: 1140px;
+    padding: 80px 24px;
+  }
+  .hero-title {
+    font-size: 3.4rem;
+  }
+  .reasons-grid {
+    gap: 24px;
+  }
 }
 
+/* 2. Tablets & Small Laptops (769px - 1024px) */
+@media (max-width: 1024px) {
+  .section {
+    padding: 60px 20px;
+  }
+  .hero-title {
+    font-size: 2.8rem;
+  }
+  .nav-links {
+    gap: 10px;
+  }
+  .nav-links a {
+    padding: 6px 10px;
+    font-size: 0.84rem;
+  }
+  .reasons-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .reason-card-grand {
+    grid-column: span 2;
+  }
+  .highlights-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .music-card {
+    gap: 30px;
+    padding: 35px 28px;
+  }
+  .vinyl-container {
+    width: 155px;
+    height: 155px;
+  }
+  .song-title {
+    font-size: 1.9rem;
+  }
+}
+
+/* 3. Handphones & Narrow Tablets (<= 860px) */
+@media (max-width: 860px) {
+  /* Navigation: Collapse top links, show quick music pill, show bottom navigation bar */
+  .navbar {
+    padding: 10px 4%;
+  }
+  .nav-links {
+    display: none !important;
+  }
+  .nav-music-pill {
+    display: inline-flex;
+  }
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  /* Reserve scroll room at bottom so mobile bar never covers content */
+  .main-content {
+    padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Floating Music Button moves safely above bottom nav */
+  .floating-music-btn {
+    bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    font-size: 1.15rem;
+  }
+
+  /* Music Player Section */
+  .music-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+    gap: 22px;
+  }
+  .vinyl-container {
+    margin: 0 auto;
+    width: 145px;
+    height: 145px;
+  }
+  .song-quote {
+    border-left: none;
+    border-top: 2px solid var(--blue-primary);
+    padding: 12px 0 0 0;
+    margin-bottom: 18px;
+  }
+  .buttons-row {
+    justify-content: center;
+  }
+  .extra-controls {
+    justify-content: center;
+    gap: 12px;
+  }
+  .volume-control {
+    justify-content: center;
+  }
+}
+
+/* 4. Smartphones & Mobile Portrait (<= 640px) */
 @media (max-width: 640px) {
-  .navbar { padding: 12px 4%; }
-  .nav-links { display: none; }
-  .hero-title { font-size: 2rem; }
-  .polaroid-media { height: 280px; }
-  .countdown-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .count-number { font-size: 2.4rem; }
-  .journey-stats { grid-template-columns: 1fr; gap: 12px; }
-  .reasons-grid { grid-template-columns: 1fr; }
-  .reason-card-grand { grid-column: span 1; }
-  .parchment-paper { padding: 30px 20px; }
-  .letter-heading { font-size: 1.5rem; flex-direction: column; gap: 5px; }
-  .music-card { padding: 25px 15px; }
-  .gate-card { padding: 30px 20px; }
-  .highlights-strip { grid-template-columns: 1fr; }
-  .lightbox-container { gap: 8px; }
+  /* Global section rhythm on phones */
+  .section {
+    padding: 40px 14px;
+  }
+  .section-header {
+    margin-bottom: 26px;
+  }
+  .section-tag {
+    font-size: 0.76rem;
+    padding: 5px 12px;
+  }
+  .section-title {
+    font-size: 1.65rem;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .section-subtitle {
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    margin: 15px auto 10px auto;
+    padding: 20px 10px;
+  }
+  .hero-badge {
+    font-size: 0.74rem;
+    padding: 5px 12px;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .hero-title {
+    font-size: 1.85rem;
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+  .hero-description {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* Meaning pills: stack vertically on mobile */
+  .meaning-pills {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 25px;
+  }
+  .pill {
+    max-width: 100%;
+    width: 100%;
+    padding: 12px 16px;
+  }
+  .pill-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.05rem;
+  }
+  .pill-text strong {
+    font-size: 0.92rem;
+  }
+  .pill-text small {
+    font-size: 0.76rem;
+  }
+
+  /* Polaroid Showcase */
+  .hero-photo-showcase {
+    margin-top: 15px;
+    width: 100%;
+  }
+  .polaroid-card {
+    max-width: 100%;
+    width: 100%;
+    padding: 10px 10px 14px 10px;
+    border-radius: 14px;
+  }
+  .polaroid-media {
+    height: clamp(250px, 72vw, 320px);
+    border-radius: 10px;
+  }
+  .polaroid-title {
+    font-size: 1.45rem;
+  }
+  .polaroid-date {
+    font-size: 0.78rem;
+  }
+
+  /* Horizontal swipe switcher for mini thumbnails on mobile */
+  .hero-thumbs-row {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 4px;
+    gap: 8px;
+    scrollbar-width: thin;
+  }
+  .hero-thumb-btn {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    scroll-snap-align: center;
+  }
+
+  /* Countdown Grid (Compact 4-column row on mobile) */
+  .countdown-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .count-box {
+    padding: 14px 4px;
+    border-radius: 14px;
+  }
+  .count-number {
+    font-size: 1.65rem;
+    margin-bottom: 2px;
+  }
+  .count-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Journey Stats */
+  .journey-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .stat-card {
+    padding: 12px 4px;
+    border-radius: 12px;
+  }
+  .stat-card i {
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+  }
+  .stat-card h4 {
+    font-size: 0.94rem;
+  }
+  .stat-card p {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  /* 7 Reasons Why (Single Column on Phone) */
+  .reasons-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .reason-card {
+    height: 195px;
+  }
+  .reason-card-grand {
+    grid-column: span 1;
+    height: 205px;
+  }
+  .card-front, .card-back {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+  .card-front i {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+  .card-front h3 {
+    font-size: 1rem;
+  }
+  .card-back p {
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  /* Highlights Milestones: Native Horizontal Swipe Carousel */
+  .gallery-highlights-container {
+    padding: 16px 12px;
+    border-radius: 18px;
+    margin-bottom: 25px;
+  }
+  .highlights-strip {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+  .highlight-card {
+    flex: 0 0 240px;
+    scroll-snap-align: start;
+    height: 155px;
+    border-radius: 12px;
+  }
+
+  /* Upload Dropzone */
+  .upload-dropzone {
+    padding: 22px 14px;
+    border-radius: 18px;
+  }
+  .upload-inputs {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .caption-input {
+    min-width: 100%;
+    font-size: 16px !important; /* Prevents auto zoom in iOS Safari */
+  }
+  .btn-choose-file {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  /* Gallery Filters: Horizontal Swipe Strip */
+  .gallery-filters {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+  .gallery-filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+  .btn-clear-all {
+    margin-left: 0;
+  }
+
+  /* Gallery Grid: 2-Column Photo Feed on Phones */
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .moment-card {
+    border-radius: 14px;
+  }
+  .moment-media {
+    height: 145px;
+  }
+  .moment-details {
+    padding: 10px 8px;
+    gap: 4px;
+  }
+  .moment-caption {
+    font-size: 0.84rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .moment-details p {
+    display: none; /* Hide long secondary description on compact mobile cards to keep cards uniform */
+  }
+  .moment-footer {
+    padding-top: 6px;
+    font-size: 0.72rem;
+  }
+
+  /* Fullscreen Lightbox Modal */
+  .lightbox-modal {
+    padding: 10px;
+  }
+  .lightbox-container {
+    gap: 6px;
+  }
+  .lightbox-media-wrapper {
+    max-height: 50vh;
+    margin-bottom: 10px;
+  }
+  .lightbox-media-wrapper img,
+  .lightbox-media-wrapper video {
+    max-height: 50vh;
+    border-radius: 10px;
+  }
   .lightbox-nav-btn {
     position: absolute;
-    top: 40%;
+    top: 38%;
     transform: translateY(-50%);
     width: 42px;
     height: 42px;
-    font-size: 1rem;
-    background: rgba(0, 0, 0, 0.65);
+    font-size: 1.05rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
-  .lightbox-nav-btn.prev-btn { left: 5px; }
-  .lightbox-nav-btn.next-btn { right: 5px; }
+  .lightbox-nav-btn.prev-btn { left: 4px; }
+  .lightbox-nav-btn.next-btn { right: 4px; }
+  .lightbox-close {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.7rem;
+    background: rgba(0, 0, 0, 0.7);
+  }
+  .lightbox-info h4 {
+    font-size: 1.15rem;
+  }
+  .lightbox-caption {
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+  }
+  .lightbox-actions-row {
+    gap: 8px;
+  }
+  .btn-lightbox-action, .btn-delete-moment, .badge-permanent-moment {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* Love Letter */
+  .parchment-paper {
+    padding: 26px 16px;
+    border-radius: 16px;
+  }
+  .letter-heading {
+    font-size: 1.35rem;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+  .wax-seal {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+  .letter-body {
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+  .letter-signature {
+    margin-top: 22px;
+  }
+
+  /* Wishes Card */
+  .wish-card {
+    padding: 24px 14px;
+    border-radius: 20px;
+  }
+  .wish-header h3 {
+    font-size: 1.45rem;
+  }
+  .wish-form input,
+  .wish-form textarea {
+    font-size: 16px !important; /* Prevents auto zoom in iOS Safari */
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .btn-wish {
+    width: 100%;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  /* Surprise Gate (Envelope) on Phones */
+  .gate-card {
+    padding: 24px 16px;
+    max-height: 94dvh;
+    overflow-y: auto;
+    border-radius: 20px;
+  }
+  .envelope-wrapper {
+    width: 160px;
+    height: 115px;
+    margin-bottom: 20px;
+  }
+  .envelope-flap {
+    border-left-width: 80px;
+    border-right-width: 80px;
+    border-top-width: 62px;
+  }
+  .envelope-pocket {
+    border-left-width: 80px;
+    border-right-width: 80px;
+    border-bottom-width: 58px;
+    border-top-width: 58px;
+  }
+  .envelope-letter {
+    height: 80px;
+    font-size: 10px;
+  }
+  .gate-title {
+    font-size: 1.4rem;
+  }
+  .gate-subtitle {
+    font-size: 0.84rem;
+    margin-bottom: 18px;
+  }
+  .btn-surprise {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+  }
+}
+
+/* 5. Ultra-Narrow Screens (<= 360px) */
+@media (max-width: 360px) {
+  .section {
+    padding: 30px 10px;
+  }
+  .hero-title {
+    font-size: 1.65rem;
+  }
+  .countdown-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .journey-stats {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+  .moment-media {
+    height: 175px;
+  }
 }

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Happy 7th Anniversary, Sayang! ❤️💙 | 16-12-2026</title>
   <meta name="description" content="Web surprise spesial 7 tahun anniversary penuh cinta dan keceriaan untuk pasangan tercinta.">
   
@@ -59,10 +59,16 @@
       <nav class="nav-links" aria-label="Navigasi Utama">
         <a href="#countdown"><i class="fa-solid fa-clock"></i> Countdown</a>
         <a href="#music"><i class="fa-solid fa-music"></i> Lagu Kita</a>
-        <a href="#letter"><i class="fa-solid fa-envelope-open-text"></i> Surat Cinta</a>
         <a href="#reasons"><i class="fa-solid fa-heart"></i> 7 Alasan</a>
         <a href="#gallery"><i class="fa-solid fa-photo-film"></i> Galeri Momen</a>
+        <a href="#letter"><i class="fa-solid fa-envelope-open-text"></i> Surat Cinta</a>
+        <a href="#wishes"><i class="fa-solid fa-pen-fancy"></i> Pesan Kita</a>
       </nav>
+      <!-- Quick Music Button (Visible on Mobile/Tablet) -->
+      <button class="nav-music-pill" id="navMusicPill" aria-label="Nyalakan atau hentikan musik romantis" title="Putar / Pause Lagu">
+        <i class="fa-solid fa-music"></i>
+        <span class="nav-pill-text">Putar Lagu</span>
+      </button>
     </header>
 
     <!-- Hero Section -->
@@ -492,6 +498,34 @@
       <p class="footer-text">Dibuat dengan segenap cinta & kasih sayang untuk wanitaku tercinta</p>
       <p class="footer-date">7 Tahun Penuh Cerita • Menuju 16 Desember 2026 & Selamanya</p>
     </footer>
+
+    <!-- Mobile Bottom Navigation Bar (Handphone Experience) -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navigasi Cepat HP" role="navigation">
+      <a href="#countdown" class="mobile-nav-link active" data-section="countdown" aria-label="Hitung Mundur">
+        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+        <span>Hitung</span>
+      </a>
+      <a href="#music" class="mobile-nav-link" data-section="music" aria-label="Pemutar Lagu">
+        <i class="fa-solid fa-music" aria-hidden="true"></i>
+        <span>Lagu</span>
+      </a>
+      <a href="#reasons" class="mobile-nav-link" data-section="reasons" aria-label="7 Alasan Cinta">
+        <i class="fa-solid fa-heart" aria-hidden="true"></i>
+        <span>Alasan</span>
+      </a>
+      <a href="#gallery" class="mobile-nav-link" data-section="gallery" aria-label="Galeri Kenangan">
+        <i class="fa-solid fa-images" aria-hidden="true"></i>
+        <span>Galeri</span>
+      </a>
+      <a href="#letter" class="mobile-nav-link" data-section="letter" aria-label="Surat Cinta">
+        <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
+        <span>Surat</span>
+      </a>
+      <a href="#wishes" class="mobile-nav-link" data-section="wishes" aria-label="Kolom Ucapan">
+        <i class="fa-solid fa-pen-fancy" aria-hidden="true"></i>
+        <span>Pesan</span>
+      </a>
+    </nav>
   </main>
 
   <!-- ================= FLOATING ACTION BUTTON (MUSIC TOGGLE) ================= -->
