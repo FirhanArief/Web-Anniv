@@ -16,10 +16,13 @@ Selamat! Web surprise anniversary untuk pasangan Anda telah siap digunakan.
      * Opsi A (Langsung dari Web): Buka web, masuk ke bagian "Lagu Kebangsaan Cinta Kita", lalu klik tombol "Ganti MP3" dan pilih file lagunya dari perangkat Anda.
      * Opsi B (Permanen): Masukkan file MP3 Anda ke dalam folder "assets" ini dan beri nama "valentine.mp3". Web akan otomatis membacanya secara offline!
 
-3. FITUR UPLOAD FOTO & VIDEO (INDEXEDDB):
-   - Anda atau pasangan Anda dapat langsung mengupload foto (JPG, PNG) atau video kenangan (MP4) langsung dari web.
-   - Foto dan video yang di-upload otomatis tersimpan di memori browser perangkat (IndexedDB), sehingga TIDAK AKAN HILANG saat halaman di-refresh!
-   - Klik foto/video di galeri untuk melihat dalam ukuran layar penuh (Fullscreen Lightbox).
+3. KOLEKSI 24 FOTO KENANGAN & FITUR UPLOAD (ASET FOTO):
+   - Seluruh 24 foto dari folder "AsetFoto" telah dimasukkan secara permanen ke dalam web:
+     * Hero Section: Polaroid foto romantis interaktif yang dapat diganti dan diklik.
+     * Tonggak Sorotan: 4 momen penting perjalanan cinta kita (Maret 2025 s/d Oktober 2026).
+     * Galeri Lengkap: 24 kartu kenangan tersusun rapi berdasarkan tanggal asli momen, dengan filter tahun (2025, 2026, dan Semua).
+     * Fullscreen Lightbox Album: Klik foto apa saja untuk membuka album resolusi tinggi layar penuh, lengkap dengan tombol panah (Sebelumnya / Selanjutnya), keyboard panah kiri/kanan, dan usap layar (swipe) di HP.
+   - Anda atau pasangan Anda juga tetap dapat mengupload foto/video kenangan baru secara langsung melalui form upload web (tersimpan di IndexedDB browser).
 
 4. HITUNG MUNDUR (COUNTDOWN):
    - Timer hitung mundur secara otomatis menghitung waktu menuju tanggal sakral 16 Desember 2026 (Anniversary ke-7).
