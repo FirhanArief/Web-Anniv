@@ -1,37 +1,61 @@
 /**
+<<<<<<< HEAD
  * Anniversary Surprise Web - Application Logic
  * 7th Anniversary Celebration (16-12-2026)
  * Theme: Crimson Red & Ocean Blue
  * Features: Background Particles, Audio Player with Autoplay & Synth Fallback,
  *           Countdown Timer, Interactive Reason Cards, IndexedDB Gallery, Love Letter, Wishes.
+=======
+ * ==========================================================
+ * ANNIVERSARY SURPRISE WEB - JAVASCRIPT LOGIC
+ * Perayaan 7 Tahun Cinta (16-12-2026)
+ * Warna: Merah (Cinta) & Biru (Keceriaan)
+ * Fitur: IndexedDB Foto/Video, Jim Brickman - Valentine Player,
+ *        Countdown, Partikel Hati & Bintang, Typewriter Letter.
+ * ==========================================================
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
  */
 
 // Global State
 let db = null;
 let currentFilter = 'all';
 let activeMomentId = null;
+<<<<<<< HEAD
 let activeMomentIndex = 0;
 let currentVisibleMoments = [];
 let allMomentsCache = [];
 let isPlaying = false;
 let synthesizedAudio = null;
+=======
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 
 document.addEventListener('DOMContentLoaded', () => {
   initParticleCanvas();
   initCountdown();
   initMusicPlayer();
   initSurpriseGate();
+<<<<<<< HEAD
   initReasonCards();
   initHeroPhotoShowcase();
   initGalleryHighlights();
+=======
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   initIndexedDB();
   initLetterFeatures();
   initWishesFeature();
   initClickSparkles();
+<<<<<<< HEAD
   initGlobalKeyboardShortcuts();
 });
 
 /* 1. Background Particle Canvas (Romantic Hearts & Joyful Bubbles) */
+=======
+});
+
+/* ==========================================================
+   1. CANVAS PARTIKEL LATAR (HATI MERAH & BINTANG/GELEMBUNG BIRU)
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initParticleCanvas() {
   const canvas = document.getElementById('particleCanvas');
   if (!canvas) return;
@@ -61,6 +85,10 @@ function initParticleCanvas() {
       this.speedX = isBurst ? (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 0.8;
       this.opacity = isBurst ? 1 : Math.random() * 0.6 + 0.2;
       this.fade = isBurst ? 0.02 : 0;
+<<<<<<< HEAD
+=======
+      // 50% Hati Merah (Cinta), 50% Gelembung/Bintang Biru (Keceriaan)
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       this.isHeart = Math.random() > 0.45;
       this.color = this.isHeart 
         ? (Math.random() > 0.5 ? '#e63946' : '#ff4d6d') 
@@ -80,6 +108,10 @@ function initParticleCanvas() {
 
       if (this.y < -30 || this.opacity <= 0) {
         if (this.fade > 0) {
+<<<<<<< HEAD
+=======
+          // Buang partikel ledakan yang habis
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
           return false;
         }
         this.reset();
@@ -97,8 +129,15 @@ function initParticleCanvas() {
       ctx.shadowColor = this.color;
 
       if (this.isHeart) {
+<<<<<<< HEAD
         drawHeart(ctx, 0, 0, this.size);
       } else {
+=======
+        // Gambar Hati Romantis
+        drawHeart(ctx, 0, 0, this.size);
+      } else {
+        // Gambar Bintang/Lingkaran Biru Ceria
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
         drawSparkle(ctx, 0, 0, this.size * 0.8);
       }
       ctx.restore();
@@ -140,6 +179,10 @@ function initParticleCanvas() {
   }
   animate();
 
+<<<<<<< HEAD
+=======
+  // Export burst generator for interactive clicks
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   window.triggerParticleBurst = (x, y, count = 25) => {
     for (let i = 0; i < count; i++) {
       particles.push(new Particle(x, y, true));
@@ -147,31 +190,56 @@ function initParticleCanvas() {
   };
 }
 
+<<<<<<< HEAD
 /* Interactive click sparkles on page */
 function initClickSparkles() {
   window.addEventListener('click', (e) => {
+=======
+/* Klik layar manapun memicu semburan hati & bintang */
+function initClickSparkles() {
+  window.addEventListener('click', (e) => {
+    // Hindari tombol interaktif tertentu jika mengganggu
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     if (window.triggerParticleBurst) {
       window.triggerParticleBurst(e.clientX, e.clientY, 15);
     }
   });
 }
 
+<<<<<<< HEAD
 /* 2. Surprise Gate & Envelope Reveal */
+=======
+/* ==========================================================
+   2. PINTU KEJUTAN (SURPRISE GATE) & REVEAL
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initSurpriseGate() {
   const gate = document.getElementById('surpriseGate');
   const mainContent = document.getElementById('mainContent');
   const envelope = document.getElementById('envelopeWrapper');
   const openSurpriseBtn = document.getElementById('openSurpriseBtn');
+<<<<<<< HEAD
 
   function openSurprise(e) {
     if (e) e.stopPropagation();
     if (envelope) envelope.classList.add('opened');
 
     const rect = envelope ? envelope.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+=======
+  const audio = document.getElementById('audioPlayer');
+
+  function openSurprise(e) {
+    if (e) e.stopPropagation();
+    envelope.classList.add('opened');
+
+    // Ledakan partikel cinta di tengah amplop
+    const rect = envelope.getBoundingClientRect();
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     if (window.triggerParticleBurst) {
       window.triggerParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 50);
     }
 
+<<<<<<< HEAD
     // Ensure music is active and playing
     if (!isPlaying && window.playMusic) {
       window.playMusic();
@@ -180,10 +248,21 @@ function initSurpriseGate() {
     setTimeout(() => {
       if (gate) gate.classList.add('open');
       if (mainContent) mainContent.classList.remove('hidden');
+=======
+    // Mulai lagu Jim Brickman - Valentine
+    playMusic();
+
+    setTimeout(() => {
+      gate.classList.add('open');
+      mainContent.classList.remove('hidden');
+
+      // Animasi scroll lembut ke hero
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 900);
   }
 
+<<<<<<< HEAD
   if (envelope) {
     envelope.addEventListener('click', openSurprise);
     envelope.addEventListener('keydown', (e) => {
@@ -200,12 +279,25 @@ function initSurpriseGate() {
 }
 
 /* 3. Countdown Timer (Target: 16 December 2026) */
+=======
+  if (envelope) envelope.addEventListener('click', openSurprise);
+  if (openSurpriseBtn) openSurpriseBtn.addEventListener('click', openSurprise);
+}
+
+/* ==========================================================
+   3. HITUNG MUNDUR (COUNTDOWN) 16 DESEMBER 2026
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initCountdown() {
   const daysEl = document.getElementById('days');
   const hoursEl = document.getElementById('hours');
   const minutesEl = document.getElementById('minutes');
   const secondsEl = document.getElementById('seconds');
 
+<<<<<<< HEAD
+=======
+  // Tanggal target: 16 Desember 2026 pukul 00:00:00
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   const targetDate = new Date('2026-12-16T00:00:00');
 
   function update() {
@@ -237,7 +329,16 @@ function initCountdown() {
   setInterval(update, 1000);
 }
 
+<<<<<<< HEAD
 /* 4. Audio Player with Immediate Autoplay & Fallback Synthesizer */
+=======
+/* ==========================================================
+   4. PEMUTAR MUSIK (JIM BRICKMAN - VALENTINE)
+   ========================================================== */
+let isPlaying = false;
+let synthesizedAudio = null;
+
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initMusicPlayer() {
   const audio = document.getElementById('audioPlayer');
   const mainPlayBtn = document.getElementById('mainPlayBtn');
@@ -253,6 +354,10 @@ function initMusicPlayer() {
   const forwardBtn = document.getElementById('forwardBtn');
   const customAudioInput = document.getElementById('customAudioInput');
 
+<<<<<<< HEAD
+=======
+  // Format detik menjadi mm:ss
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return '00:00';
     const m = Math.floor(seconds / 60);
@@ -261,6 +366,7 @@ function initMusicPlayer() {
   }
 
   window.playMusic = function() {
+<<<<<<< HEAD
     if (!audio) return;
     const playPromise = audio.play();
 
@@ -282,6 +388,22 @@ function initMusicPlayer() {
 
   function pauseMusic() {
     if (audio) audio.pause();
+=======
+    audio.play().then(() => {
+      isPlaying = true;
+      updateUI();
+    }).catch(err => {
+      console.warn('Audio play was prevented or failed:', err);
+      // Fallback: Jika file remote gagal dimuat, gunakan Synthesizer Piano Romantis agar tetap ada suara merdu!
+      playRomanticSynth();
+      isPlaying = true;
+      updateUI();
+    });
+  };
+
+  function pauseMusic() {
+    audio.pause();
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     if (synthesizedAudio) {
       synthesizedAudio.stop();
       synthesizedAudio = null;
@@ -317,6 +439,7 @@ function initMusicPlayer() {
   }
 
   if (mainPlayBtn) mainPlayBtn.addEventListener('click', togglePlay);
+<<<<<<< HEAD
 
   if (floatingMusicBtn) {
     floatingMusicBtn.addEventListener('click', () => {
@@ -362,35 +485,83 @@ function initMusicPlayer() {
     });
   }
 
+=======
+  if (floatingMusicBtn) floatingMusicBtn.addEventListener('click', () => {
+    togglePlay();
+    const musicSection = document.getElementById('music');
+    if (musicSection) {
+      musicSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  // Update progress bar
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration) {
+      const pct = (audio.currentTime / audio.duration) * 100;
+      if (progressBar) progressBar.style.width = `${pct}%`;
+      if (currentTimeEl) currentTimeEl.textContent = formatTime(audio.currentTime);
+      if (durationTimeEl) durationTimeEl.textContent = formatTime(audio.duration);
+    }
+  });
+
+  audio.addEventListener('loadedmetadata', () => {
+    if (durationTimeEl) durationTimeEl.textContent = formatTime(audio.duration);
+  });
+
+  // Seeking on progress container click
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   if (progressContainer) {
     progressContainer.addEventListener('click', (e) => {
       const width = progressContainer.clientWidth;
       const clickX = e.offsetX;
+<<<<<<< HEAD
       if (audio && audio.duration) {
+=======
+      if (audio.duration) {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
         audio.currentTime = (clickX / width) * audio.duration;
       }
     });
   }
 
+<<<<<<< HEAD
   if (rewindBtn && audio) {
+=======
+  // Rewind & Forward 10s
+  if (rewindBtn) {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     rewindBtn.addEventListener('click', () => {
       audio.currentTime = Math.max(0, audio.currentTime - 10);
     });
   }
+<<<<<<< HEAD
 
   if (forwardBtn && audio) {
+=======
+  if (forwardBtn) {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     forwardBtn.addEventListener('click', () => {
       audio.currentTime = Math.min(audio.duration || 999, audio.currentTime + 10);
     });
   }
 
+<<<<<<< HEAD
   if (volumeSlider && audio) {
+=======
+  // Volume slider
+  if (volumeSlider) {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     volumeSlider.addEventListener('input', (e) => {
       audio.volume = e.target.value;
     });
   }
 
+<<<<<<< HEAD
   if (customAudioInput && audio) {
+=======
+  // Custom MP3 upload from user
+  if (customAudioInput) {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     customAudioInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -401,6 +572,7 @@ function initMusicPlayer() {
       }
     });
   }
+<<<<<<< HEAD
 
   // Attempt direct autoplay immediately on page load
   window.playMusic();
@@ -421,6 +593,14 @@ function initMusicPlayer() {
 }
 
 /* Fallback Synthesizer for romantic chord sequence (C - G - Am - F) */
+=======
+}
+
+/**
+ * Fallback Piano Synthesizer: Memainkan chord romantis lembut (C - G - Am - F)
+ * jika koneksi audio eksternal terhalang oleh kebijakan CORS browser.
+ */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function playRomanticSynth() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -428,10 +608,17 @@ function playRomanticSynth() {
     const actx = new AudioContext();
 
     const notes = [
+<<<<<<< HEAD
       261.63, 329.63, 392.00, 523.25,
       196.00, 246.94, 293.66, 392.00,
       220.00, 261.63, 329.63, 440.00,
       174.61, 220.00, 261.63, 349.23
+=======
+      261.63, 329.63, 392.00, 523.25, // C chord
+      196.00, 246.94, 293.66, 392.00, // G chord
+      220.00, 261.63, 329.63, 440.00, // Am chord
+      174.61, 220.00, 261.63, 349.23  // F chord
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     ];
 
     let noteIndex = 0;
@@ -464,6 +651,7 @@ function playRomanticSynth() {
       }
     };
   } catch (e) {
+<<<<<<< HEAD
     console.log('Synthesizer audio not supported in this environment');
   }
 }
@@ -492,6 +680,15 @@ function initReasonCards() {
 }
 
 /* 6. IndexedDB Gallery for Memories */
+=======
+    console.log('Synthesizer not supported');
+  }
+}
+
+/* ==========================================================
+   5. INDEXEDDB GALLERY UNTUK FOTO & VIDEO KENANGAN
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initIndexedDB() {
   const DB_NAME = 'AnniversaryMemoriesDB';
   const DB_VERSION = 1;
@@ -512,7 +709,11 @@ function initIndexedDB() {
   };
 
   request.onerror = (e) => {
+<<<<<<< HEAD
     console.error('IndexedDB error:', e.target.error);
+=======
+    console.error('IndexedDB Error:', e.target.error);
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   };
 
   setupDropZoneAndUpload();
@@ -527,6 +728,10 @@ function setupDropZoneAndUpload() {
 
   if (!dropZone || !fileInput) return;
 
+<<<<<<< HEAD
+=======
+  // Drag & Drop events
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   ['dragenter', 'dragover'].forEach(eventName => {
     dropZone.addEventListener(eventName, (e) => {
       e.preventDefault();
@@ -601,6 +806,7 @@ function handleUploadedFiles(files, customCaption) {
   };
 }
 
+<<<<<<< HEAD
 /* 6. Curated 24 Anniversary Photos (March 2025 - October 2026) */
 const ASET_FOTO_ITEMS = [
   {
@@ -1088,6 +1294,18 @@ function applyFilterAndRender() {
   });
 
   renderGalleryGrid(currentVisibleMoments);
+=======
+function loadGalleryMoments() {
+  if (!db) return;
+  const tx = db.transaction('moments', 'readonly');
+  const store = tx.objectStore('moments');
+  const request = store.getAll();
+
+  request.onsuccess = () => {
+    const moments = request.result || [];
+    renderGalleryGrid(moments);
+  };
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 }
 
 function renderGalleryGrid(moments) {
@@ -1095,23 +1313,55 @@ function renderGalleryGrid(moments) {
   if (!grid) return;
   grid.innerHTML = '';
 
+<<<<<<< HEAD
   if (moments.length === 0) {
     grid.innerHTML = `
       <div class="gallery-empty" style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #94a3b8;">
         <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: #00b4d8; margin-bottom: 15px;" aria-hidden="true"></i>
         <h3 style="color: #fff; font-size: 1.3rem; margin-bottom: 8px;">Belum ada momen untuk kategori ini</h3>
         <p style="font-size: 0.9rem;">Pilih kategori lain atau tambahkan foto kenangan baru di atas!</p>
+=======
+  // Filter moments
+  const filtered = moments.filter(m => {
+    if (currentFilter === 'all') return true;
+    return m.type === currentFilter;
+  });
+
+  // Jika belum ada momen yang di-upload, sertakan kartu contoh romantis awal
+  if (filtered.length === 0 && moments.length === 0) {
+    const sampleMoments = getStarterMoments();
+    sampleMoments.forEach(m => {
+      grid.appendChild(createStarterCardElement(m));
+    });
+    return;
+  }
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="gallery-empty">
+        <i class="fa-solid fa-folder-open"></i>
+        <h3>Belum ada ${currentFilter === 'video' ? 'video' : 'foto'}</h3>
+        <p>Ayo upload kenangan spesial kalian di atas!</p>
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       </div>
     `;
     return;
   }
 
+<<<<<<< HEAD
   moments.forEach(item => {
+=======
+  // Tampilkan dari yang paling baru di-upload
+  filtered.sort((a, b) => b.timestamp - a.timestamp);
+
+  filtered.forEach(item => {
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     const card = document.createElement('div');
     card.className = 'moment-card';
     card.dataset.id = item.id;
 
     const mediaHtml = item.type === 'video'
+<<<<<<< HEAD
       ? `<video src="${item.src}" preload="metadata"></video>`
       : `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
 
@@ -1125,10 +1375,24 @@ function renderGalleryGrid(moments) {
           <i class="fa-solid ${badgeIcon}"></i> ${badgeText}
         </span>
         <div class="moment-overlay" aria-hidden="true">
+=======
+      ? `<video src="${item.dataUrl}" preload="metadata"></video>`
+      : `<img src="${item.dataUrl}" alt="${escapeHtml(item.caption)}" loading="lazy">`;
+
+    card.innerHTML = `
+      <div class="moment-media" onclick="openLightbox(${item.id})">
+        ${mediaHtml}
+        <span class="media-type-badge ${item.type === 'video' ? 'video' : 'photo'}">
+          <i class="fa-solid ${item.type === 'video' ? 'fa-video' : 'fa-image'}"></i>
+          ${item.type === 'video' ? 'Video' : 'Foto'}
+        </span>
+        <div class="moment-overlay">
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
           <i class="fa-solid fa-expand"></i>
         </div>
       </div>
       <div class="moment-details">
+<<<<<<< HEAD
         <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">${escapeHtml(item.title)}</div>
         <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">${escapeHtml(item.caption)}</p>
         <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
@@ -1160,12 +1424,75 @@ function renderGalleryGrid(moments) {
       });
     }
 
+=======
+        <div class="moment-caption">${escapeHtml(item.caption)}</div>
+        <div class="moment-footer">
+          <span><i class="fa-regular fa-calendar"></i> ${item.date}</span>
+          <button class="moment-del-btn" onclick="deleteMoment(${item.id})" title="Hapus Momen">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+    `;
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     grid.appendChild(card);
   });
 }
 
+<<<<<<< HEAD
 window.deleteMoment = function(id) {
   if (!confirm('Apakah kamu yakin ingin menghapus momen tambahan ini?')) return;
+=======
+function getStarterMoments() {
+  return [
+    {
+      title: "Momen Awal Pertemuan",
+      date: "16 Desember 2019",
+      desc: "Hari pertama kisah indah 7 tahun ini dimulai.",
+      bg: "linear-gradient(135deg, #e63946, #9d0208)",
+      icon: "fa-heart"
+    },
+    {
+      title: "Tawa & Keceriaan Bersamamu",
+      date: "Setiap Hari Indah",
+      desc: "Warna biru keceriaan yang selalu kamu hadirkan.",
+      bg: "linear-gradient(135deg, #0096c7, #023e8a)",
+      icon: "fa-sun"
+    },
+    {
+      title: "Perjalanan Menuju 7 Tahun",
+      date: "16 Desember 2026",
+      desc: "Dan cinta ini akan terus bersemi hingga selamanya.",
+      bg: "linear-gradient(135deg, #b5179e, #7209b7)",
+      icon: "fa-infinity"
+    }
+  ];
+}
+
+function createStarterCardElement(starter) {
+  const card = document.createElement('div');
+  card.className = 'moment-card';
+  card.innerHTML = `
+    <div class="moment-media" style="background: ${starter.bg}; display: flex; align-items: center; justify-content: center; color: white;">
+      <i class="fa-solid ${starter.icon}" style="font-size: 3.5rem; opacity: 0.85;"></i>
+      <span class="media-type-badge photo">
+        <i class="fa-solid fa-sparkles"></i> Momen Abadi
+      </span>
+    </div>
+    <div class="moment-details">
+      <div class="moment-caption">${starter.title}</div>
+      <p style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.4;">${starter.desc}</p>
+      <div class="moment-footer" style="margin-top: 8px;">
+        <span><i class="fa-regular fa-calendar"></i> ${starter.date}</span>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+window.deleteMoment = function(id) {
+  if (!confirm('Apakah kamu yakin ingin menghapus momen kenangan ini?')) return;
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   if (!db) return;
 
   const tx = db.transaction('moments', 'readwrite');
@@ -1185,30 +1512,49 @@ function setupGalleryFilters() {
       filterBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFilter = btn.dataset.filter;
+<<<<<<< HEAD
       applyFilterAndRender();
+=======
+      loadGalleryMoments();
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
     });
   });
 
   const clearAllBtn = document.getElementById('clearAllBtn');
   if (clearAllBtn) {
     clearAllBtn.addEventListener('click', () => {
+<<<<<<< HEAD
       if (!confirm('Hapus seluruh foto & video tambahan yang Anda upload secara mandiri dari browser ini? (24 foto kenangan utama tidak akan terhapus)')) return;
+=======
+      if (!confirm('Hapus seluruh foto & video yang telah diupload dari browser ini?')) return;
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       if (!db) return;
       const tx = db.transaction('moments', 'readwrite');
       tx.objectStore('moments').clear();
       tx.oncomplete = () => {
         loadGalleryMoments();
+<<<<<<< HEAD
         alert('Seluruh momen tambahan telah dibersihkan!');
+=======
+        alert('Galeri telah dibersihkan!');
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       };
     });
   }
 }
 
+<<<<<<< HEAD
 /* 7. Lightbox Fullscreen Modal with Carousel Navigation */
+=======
+/* ==========================================================
+   6. LIGHTBOX FULLSCREEN MODAL
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function setupLightbox() {
   const modal = document.getElementById('lightboxModal');
   const closeBtn = document.getElementById('lightboxCloseBtn');
   const deleteBtn = document.getElementById('lightboxDeleteBtn');
+<<<<<<< HEAD
   const prevBtn = document.getElementById('lightboxPrevBtn');
   const nextBtn = document.getElementById('lightboxNextBtn');
 
@@ -1216,6 +1562,10 @@ function setupLightbox() {
   if (prevBtn) prevBtn.addEventListener('click', lightboxPrev);
   if (nextBtn) nextBtn.addEventListener('click', lightboxNext);
 
+=======
+
+  if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   if (modal) {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeLightbox();
@@ -1230,6 +1580,7 @@ function setupLightbox() {
     });
   }
 
+<<<<<<< HEAD
   // Keyboard navigation for Lightbox
   document.addEventListener('keydown', (e) => {
     if (!modal || !modal.classList.contains('active')) return;
@@ -1351,10 +1702,45 @@ function renderLightboxCurrent() {
     }
   }
 }
+=======
+  // Escape key closes modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+}
+
+window.openLightbox = function(id) {
+  if (!db) return;
+  const tx = db.transaction('moments', 'readonly');
+  const store = tx.objectStore('moments');
+  const req = store.get(id);
+
+  req.onsuccess = () => {
+    const item = req.result;
+    if (!item) return;
+
+    activeMomentId = item.id;
+    const modal = document.getElementById('lightboxModal');
+    const mediaWrapper = document.getElementById('lightboxMediaWrapper');
+    const titleEl = document.getElementById('lightboxTitle');
+    const dateEl = document.getElementById('lightboxDate');
+
+    mediaWrapper.innerHTML = item.type === 'video'
+      ? `<video src="${item.dataUrl}" controls autoplay style="max-height: 70vh; max-width: 100%; border-radius: 12px;"></video>`
+      : `<img src="${item.dataUrl}" alt="${escapeHtml(item.caption)}" style="max-height: 70vh; max-width: 100%; border-radius: 12px;">`;
+
+    titleEl.textContent = item.caption;
+    dateEl.textContent = `${item.date} • ${item.type === 'video' ? 'Video' : 'Foto'}`;
+
+    modal.classList.add('active');
+  };
+};
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 
 function closeLightbox() {
   const modal = document.getElementById('lightboxModal');
   const mediaWrapper = document.getElementById('lightboxMediaWrapper');
+<<<<<<< HEAD
   if (mediaWrapper) mediaWrapper.innerHTML = '';
   if (modal) {
     modal.classList.remove('active');
@@ -1364,6 +1750,16 @@ function closeLightbox() {
 }
 
 /* 8. Love Letter with Typewriter Animation */
+=======
+  if (mediaWrapper) mediaWrapper.innerHTML = ''; // Hentikan pemutaran video
+  if (modal) modal.classList.remove('active');
+  activeMomentId = null;
+}
+
+/* ==========================================================
+   7. SURAT CINTA (LOVE LETTER) DENGAN ANIMASI KETIK
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initLetterFeatures() {
   const typewriterBtn = document.getElementById('typewriterBtn');
   const sendLoveHeartBtn = document.getElementById('sendLoveHeartBtn');
@@ -1371,6 +1767,11 @@ function initLetterFeatures() {
 
   if (!letterBody) return;
 
+<<<<<<< HEAD
+=======
+  const originalContent = letterBody.innerHTML;
+
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   if (typewriterBtn) {
     typewriterBtn.addEventListener('click', () => {
       const textToType = [
@@ -1381,10 +1782,18 @@ function initLetterFeatures() {
         "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya. ❤️💙"
       ];
 
+<<<<<<< HEAD
       letterBody.innerHTML = '';
       let paraIndex = 0;
       let charIndex = 0;
       let currentP = document.createElement('p');
+=======
+      letterBody.innerHTML = '<p class="typing-cursor">|</p>';
+      let paraIndex = 0;
+      let charIndex = 0;
+      let currentP = document.createElement('p');
+      letterBody.innerHTML = '';
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
       letterBody.appendChild(currentP);
 
       function typeChar() {
@@ -1409,6 +1818,10 @@ function initLetterFeatures() {
     });
   }
 
+<<<<<<< HEAD
+=======
+  // Kirim Pelukan Cinta: Efek semburan hati ke seluruh layar
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
   if (sendLoveHeartBtn) {
     sendLoveHeartBtn.addEventListener('click', () => {
       for (let i = 0; i < 5; i++) {
@@ -1425,7 +1838,13 @@ function initLetterFeatures() {
   }
 }
 
+<<<<<<< HEAD
 /* 9. Wishes for Her (LocalStorage Persistence) */
+=======
+/* ==========================================================
+   8. PESAN HARAPAN (WISHES FOR HER) DENGAN LOCALSTORAGE
+   ========================================================== */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function initWishesFeature() {
   const wishForm = document.getElementById('wishForm');
   const wishAuthor = document.getElementById('wishAuthor');
@@ -1500,6 +1919,7 @@ function initWishesFeature() {
   renderWishes();
 }
 
+<<<<<<< HEAD
 /* 10. Global Keyboard Shortcuts */
 function initGlobalKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
@@ -1519,6 +1939,9 @@ function initGlobalKeyboardShortcuts() {
 }
 
 /* Utility to sanitize text */
+=======
+/* Helper Sanitize HTML */
+>>>>>>> f0c7874fe80bbf3a3595c98cdbc3ea0af4d66d23
 function escapeHtml(text) {
   if (!text) return '';
   return text
