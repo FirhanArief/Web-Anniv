@@ -16,6 +16,16 @@ let allMomentsCache = [];
 let isPlaying = false;
 let synthesizedAudio = null;
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   allMomentsCache = [...ASET_FOTO_ITEMS];
   currentVisibleMoments = [...ASET_FOTO_ITEMS];
@@ -179,6 +189,14 @@ function initSurpriseGate() {
   let enteredPin = '';
   let isChecking = false;
 
+  // Auto-unlock if previously opened in this browser
+  try {
+    if (localStorage.getItem('anniversary_gate_unlocked') === 'true') {
+      if (gate) gate.classList.add('open');
+      if (mainContent) mainContent.classList.remove('hidden');
+    }
+  } catch (e) {}
+
   function updateDots() {
     for (let i = 0; i < 8; i++) {
       const dot = document.getElementById(`pinDot${i}`);
@@ -233,6 +251,9 @@ function initSurpriseGate() {
 
     if (enteredPin === TARGET_PIN) {
       // SUCCESS: PIN Correct!
+      try {
+        localStorage.setItem('anniversary_gate_unlocked', 'true');
+      } catch (e) {}
       if (displayWrapper) {
         displayWrapper.classList.remove('error');
         displayWrapper.classList.add('success');
@@ -346,6 +367,9 @@ function initSurpriseGate() {
   // Relock Button Handler (Navbar)
   if (relockBtn) {
     relockBtn.addEventListener('click', () => {
+      try {
+        localStorage.removeItem('anniversary_gate_unlocked');
+      } catch (e) {}
       if (gate) {
         gate.classList.remove('open');
       }
@@ -686,7 +710,14 @@ function initReasonCards() {
   });
 }
 
-/* 6. IndexedDB Gallery for Memories */
+/* 6. Robust Album Gallery & IndexedDB Storage (AnniversaryAlbumDB_v2) */
+const ALBUM_DB_NAME = 'AnniversaryAlbumDB_v2';
+const ALBUM_DB_VERSION = 2;
+const ALBUM_STORE_NAME = 'album_photos';
+const USER_MOMENTS_STORAGE_KEY = 'anniversary_user_moments_v2';
+
+let albumDBInstance = null;
+
 function initIndexedDB() {
   allMomentsCache = [...ASET_FOTO_ITEMS];
   currentVisibleMoments = [...ASET_FOTO_ITEMS];
@@ -695,42 +726,61 @@ function initIndexedDB() {
   setupGalleryFilters();
   setupLightbox();
 
-  const DB_NAME = 'AnniversaryMemoriesDB';
-  const DB_VERSION = 1;
-  const STORE_NAME = 'moments';
-
-  try {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (e) => {
-      const dbInstance = e.target.result;
-      if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-      }
-    };
-
-    request.onsuccess = (e) => {
-      db = e.target.result;
-      loadGalleryMoments();
-    };
-
-    request.onerror = (e) => {
-      console.warn('IndexedDB unavailable or restricted in this environment (offline/file protocol), using preset memories:', e.target ? e.target.error : e);
-      loadGalleryMoments();
-    };
-  } catch (err) {
-    console.warn('IndexedDB initialization exception, falling back to preset moments:', err);
+  openAlbumDatabase().then((database) => {
+    albumDBInstance = database;
+    db = database; // Backwards compatibility
     loadGalleryMoments();
-  }
+  }).catch((err) => {
+    console.warn('Database initialization fallback:', err);
+    loadGalleryMoments();
+  });
+}
+
+function openAlbumDatabase() {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) {
+      console.warn('IndexedDB not supported in this browser, using LocalStorage.');
+      resolve(null);
+      return;
+    }
+
+    try {
+      const request = indexedDB.open(ALBUM_DB_NAME, ALBUM_DB_VERSION);
+
+      request.onupgradeneeded = (e) => {
+        const dbInstance = e.target.result;
+        if (!dbInstance.objectStoreNames.contains(ALBUM_STORE_NAME)) {
+          dbInstance.createObjectStore(ALBUM_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = (e) => {
+        resolve(e.target.result);
+      };
+
+      request.onerror = (e) => {
+        console.warn('IndexedDB error on open:', e);
+        resolve(null);
+      };
+    } catch (err) {
+      console.warn('IndexedDB open exception:', err);
+      resolve(null);
+    }
+  });
 }
 
 /* Upload & Storage Helpers */
-const USER_MOMENTS_STORAGE_KEY = 'anniversary_user_moments_v1';
-
 function getStoredUserMoments() {
   try {
     const raw = localStorage.getItem(USER_MOMENTS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (raw) return JSON.parse(raw);
+    const legacy = localStorage.getItem('anniversary_user_moments_v1');
+    if (legacy) {
+      const parsedLegacy = JSON.parse(legacy);
+      persistUserMoments(parsedLegacy);
+      return parsedLegacy;
+    }
+    return [];
   } catch (err) {
     console.warn('LocalStorage read error:', err);
     return [];
@@ -739,10 +789,149 @@ function getStoredUserMoments() {
 
 function persistUserMoments(momentsList) {
   try {
-    localStorage.setItem(USER_MOMENTS_STORAGE_KEY, JSON.stringify(momentsList));
+    const safeList = momentsList.map(m => {
+      const isVideo = m.type === 'video';
+      const validThumb = (m.thumb && m.thumb.length < 300000 && !m.thumb.startsWith('blob:')) ? m.thumb : (m.thumbUrl && m.thumbUrl.length < 300000 && !m.thumbUrl.startsWith('blob:') ? m.thumbUrl : '');
+      const validSrc = (!isVideo && m.src && m.src.length < 400000 && !m.src.startsWith('blob:')) ? m.src : '';
+      return {
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        thumb: validThumb,
+        thumbUrl: validThumb,
+        src: validSrc,
+        title: m.title,
+        caption: m.caption,
+        date: m.date,
+        year: m.year,
+        timestamp: m.timestamp,
+        isPreset: false,
+        isUserUpload: true
+      };
+    });
+    localStorage.setItem(USER_MOMENTS_STORAGE_KEY, JSON.stringify(safeList));
   } catch (err) {
-    console.warn('LocalStorage save error:', err);
+    console.warn('LocalStorage save error (storage quota protected):', err);
+    try {
+      const ultraCompact = momentsList.slice(0, 20).map(m => ({
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        thumb: (m.thumb && m.thumb.length < 150000 && !m.thumb.startsWith('blob:')) ? m.thumb : '',
+        title: m.title,
+        caption: m.caption,
+        date: m.date,
+        year: m.year,
+        timestamp: m.timestamp,
+        isPreset: false,
+        isUserUpload: true
+      }));
+      localStorage.setItem(USER_MOMENTS_STORAGE_KEY, JSON.stringify(ultraCompact));
+    } catch (e2) {}
   }
+}
+
+function dbGetAllAlbumPhotos() {
+  return new Promise((resolve) => {
+    if (!albumDBInstance) {
+      resolve(getStoredUserMoments());
+      return;
+    }
+    try {
+      const tx = albumDBInstance.transaction(ALBUM_STORE_NAME, 'readonly');
+      const store = tx.objectStore(ALBUM_STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const results = req.result || [];
+        resolve(results.length > 0 ? results : getStoredUserMoments());
+      };
+      req.onerror = () => resolve(getStoredUserMoments());
+    } catch (e) {
+      resolve(getStoredUserMoments());
+    }
+  });
+}
+
+function dbSaveAlbumPhoto(photoItem) {
+  return new Promise((resolve) => {
+    try {
+      const local = getStoredUserMoments().filter(m => String(m.id) !== String(photoItem.id));
+      const compactMirror = {
+        id: photoItem.id,
+        name: photoItem.name || 'Momen Spesial',
+        type: photoItem.type || 'image',
+        thumb: (photoItem.thumb && photoItem.thumb.length < 250000) ? photoItem.thumb : (photoItem.thumbUrl && photoItem.thumbUrl.length < 250000 ? photoItem.thumbUrl : ''),
+        src: (photoItem.src && photoItem.src.length < 400000 && !photoItem.src.startsWith('blob:')) ? photoItem.src : '',
+        title: photoItem.title || 'Momen Spesial',
+        caption: photoItem.caption || '',
+        date: photoItem.date || 'Hari Ini',
+        year: photoItem.year || 'user',
+        timestamp: photoItem.timestamp || Date.now(),
+        isPreset: false,
+        isUserUpload: true
+      };
+      local.unshift(compactMirror);
+      persistUserMoments(local);
+    } catch (err) {}
+
+    if (albumDBInstance) {
+      try {
+        const tx = albumDBInstance.transaction(ALBUM_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(ALBUM_STORE_NAME);
+
+        const recordToStore = {
+          id: photoItem.id,
+          name: photoItem.name || 'Momen Spesial',
+          type: photoItem.type || 'image',
+          src: (photoItem.src && !photoItem.src.startsWith('blob:')) ? photoItem.src : '',
+          thumb: photoItem.thumb || photoItem.thumbUrl || '',
+          thumbUrl: photoItem.thumbUrl || photoItem.thumb || '',
+          title: photoItem.title || 'Momen Spesial',
+          caption: photoItem.caption || '',
+          date: photoItem.date || 'Hari Ini',
+          year: photoItem.year || 'user',
+          timestamp: photoItem.timestamp || Date.now(),
+          isPreset: false,
+          isUserUpload: true
+        };
+
+        if (photoItem.blob instanceof Blob) {
+          recordToStore.blob = photoItem.blob;
+        }
+
+        const req = store.put(recordToStore);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch (e) {
+        resolve(false);
+      }
+    } else {
+      resolve(true);
+    }
+  });
+}
+
+function dbDeleteAlbumPhoto(id) {
+  return new Promise((resolve) => {
+    try {
+      const local = getStoredUserMoments().filter(m => String(m.id) !== String(id));
+      persistUserMoments(local);
+    } catch (e) {}
+
+    if (albumDBInstance) {
+      try {
+        const tx = albumDBInstance.transaction(ALBUM_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(ALBUM_STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      } catch (e) {
+        resolve(false);
+      }
+    } else {
+      resolve(true);
+    }
+  });
 }
 
 function showToast(message, type = 'success') {
@@ -764,7 +953,7 @@ function showToast(message, type = 'success') {
   }, 4000);
 }
 
-function compressImageFile(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+function compressImageFile(file, maxWidth = 1280, maxHeight = 1280, quality = 0.78) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onerror = () => resolve(null);
@@ -801,14 +990,197 @@ function compressImageFile(file, maxWidth = 1600, maxHeight = 1600, quality = 0.
   });
 }
 
+function compressImageDual(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const img = new Image();
+      img.onerror = () => resolve({ highRes: dataUrl, thumb: dataUrl });
+      img.onload = () => {
+        const highRes = renderCanvasResized(img, 1280, 1280, 0.78);
+        const thumb = renderCanvasResized(img, 480, 480, 0.72);
+        resolve({ highRes, thumb });
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderCanvasResized(img, maxWidth, maxHeight, quality) {
+  let width = img.width;
+  let height = img.height;
+
+  if (width > maxWidth || height > maxHeight) {
+    if (width > height) {
+      height = Math.round((height * maxWidth) / width);
+      width = maxWidth;
+    } else {
+      width = Math.round((width * maxHeight) / height);
+      height = maxHeight;
+    }
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
 let pendingFilesQueue = [];
 let currentPreviewIndex = 0;
 let currentPreviewDataUrl = null;
+let currentPreviewBlob = null;
+let currentPreviewThumbUrl = null;
 let currentPreviewFileType = 'image';
+
+function isMediaFile(file) {
+  if (!file) return false;
+  if (file.type && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+    return true;
+  }
+  const ext = (file.name || '').split('.').pop().toLowerCase();
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'mp4', 'webm', 'mov', 'm4v', 'ogg', 'avi', 'mkv', '3gp'].includes(ext);
+}
+
+function isVideoFile(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith('video/')) return true;
+  const ext = (file.name || '').split('.').pop().toLowerCase();
+  return ['mp4', 'webm', 'mov', 'm4v', 'ogg', 'avi', 'mkv', '3gp'].includes(ext);
+}
+
+function extractVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          URL.revokeObjectURL(url);
+          resolve(createVideoPlaceholder(file ? file.name : ''));
+        }
+      }, 3500);
+
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(1.0, (video.duration || 1) / 2);
+      };
+
+      video.onseeked = () => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement('canvas');
+          const maxDim = 480;
+          let w = video.videoWidth || 480;
+          let h = video.videoHeight || 360;
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, w, h);
+          const thumb = canvas.toDataURL('image/jpeg', 0.78);
+          URL.revokeObjectURL(url);
+          resolve(thumb);
+        } catch (e) {
+          URL.revokeObjectURL(url);
+          resolve(createVideoPlaceholder(file ? file.name : ''));
+        }
+      };
+
+      video.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          URL.revokeObjectURL(url);
+          resolve(createVideoPlaceholder(file ? file.name : ''));
+        }
+      };
+    } catch (e) {
+      resolve(createVideoPlaceholder(file ? file.name : ''));
+    }
+  });
+}
+
+function createVideoPlaceholder(filename) {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 480;
+    canvas.height = 480;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, 480, 480);
+    grad.addColorStop(0, '#1f1325');
+    grad.addColorStop(0.5, '#0e1828');
+    grad.addColorStop(1, '#090b14');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 480, 480);
+
+    ctx.strokeStyle = 'rgba(230, 57, 70, 0.35)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(240, 220, 75, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(230, 57, 70, 0.85)';
+    ctx.beginPath();
+    ctx.arc(240, 220, 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(232, 203);
+    ctx.lineTo(256, 220);
+    ctx.lineTo(232, 237);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Video Kenangan Cinta', 240, 325);
+
+    const clean = (filename || '').replace(/\.[^/.]+$/, '').slice(0, 26);
+    if (clean) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '15px sans-serif';
+      ctx.fillText(clean, 240, 355);
+    }
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } catch (e) {
+    return '';
+  }
+}
 
 function setupDropZoneAndUpload() {
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('fileInput');
+  const albumQuickInput = document.getElementById('albumQuickInput');
+  const btnTriggerAlbumUpload = document.getElementById('btnTriggerAlbumUpload');
+  const btnTriggerDropzoneUpload = document.getElementById('btnTriggerDropzoneUpload');
+  const albumQuickCameraBtn = document.getElementById('albumQuickCameraBtn');
+  const btnBackupAlbum = document.getElementById('btnBackupAlbum');
+  const btnRestoreAlbum = document.getElementById('btnRestoreAlbum');
+  const albumRestoreInput = document.getElementById('albumRestoreInput');
   const nativeCameraPhoto = document.getElementById('nativeCameraPhoto');
   const nativeCameraVideo = document.getElementById('nativeCameraVideo');
   const previewBox = document.getElementById('uploadPreviewBox');
@@ -822,13 +1194,61 @@ function setupDropZoneAndUpload() {
   const btnConfirmUpload = document.getElementById('btnConfirmUpload');
   const btnCancelUpload = document.getElementById('btnCancelUpload');
 
-  if (!dropZone || !fileInput) return;
-
   if (previewDateInput) {
     const today = new Date().toISOString().split('T')[0];
     previewDateInput.value = today;
   }
 
+  // Quick Album Toolbar Buttons
+  if (btnTriggerAlbumUpload && albumQuickInput) {
+    btnTriggerAlbumUpload.addEventListener('click', (e) => {
+      e.preventDefault();
+      albumQuickInput.click();
+    });
+  }
+
+  if (btnTriggerDropzoneUpload && fileInput) {
+    btnTriggerDropzoneUpload.addEventListener('click', (e) => {
+      e.preventDefault();
+      fileInput.click();
+    });
+  }
+
+  if (albumQuickInput) {
+    albumQuickInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFilesSelected(e.target.files);
+        e.target.value = '';
+      }
+    });
+  }
+
+  if (albumQuickCameraBtn) {
+    albumQuickCameraBtn.addEventListener('click', () => {
+      const openLiveCameraBtn = document.getElementById('openLiveCameraBtn');
+      if (openLiveCameraBtn) {
+        openLiveCameraBtn.click();
+      } else if (nativeCameraPhoto) {
+        nativeCameraPhoto.click();
+      }
+    });
+  }
+
+  if (btnBackupAlbum) {
+    btnBackupAlbum.addEventListener('click', exportAlbumBackup);
+  }
+
+  if (btnRestoreAlbum && albumRestoreInput) {
+    btnRestoreAlbum.addEventListener('click', () => albumRestoreInput.click());
+    albumRestoreInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        importAlbumBackup(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+  }
+
+  // Native camera inputs
   [nativeCameraPhoto, nativeCameraVideo].forEach(inputEl => {
     if (inputEl) {
       inputEl.addEventListener('change', (e) => {
@@ -840,94 +1260,171 @@ function setupDropZoneAndUpload() {
     }
   });
 
-  ['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.add('dragover');
+  // DropZone Drag-and-drop
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+      });
     });
-  });
 
-  ['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, (e) => {
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        handleFilesSelected(files);
+      }
     });
-  });
+  }
 
-  dropZone.addEventListener('drop', (e) => {
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFilesSelected(files);
-    }
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      handleFilesSelected(e.target.files);
-    }
-  });
-
-  function handleFilesSelected(files) {
-    const validFiles = Array.from(files).filter(file => {
-      return file.type.startsWith('image/') || file.type.startsWith('video/');
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFilesSelected(e.target.files);
+        e.target.value = '';
+      }
     });
+  }
+
+  async function handleFilesSelected(files) {
+    const fileList = Array.from(files);
+    const validFiles = fileList.filter(file => isMediaFile(file));
 
     if (validFiles.length === 0) {
-      showToast('Pilih file berformat foto atau video (JPG, PNG, MP4, dsb).', 'info');
+      showToast('Pilih file berformat foto atau video (JPG, PNG, WEBP, MP4, MOV, dsb).', 'info');
       return;
     }
 
-    pendingFilesQueue = validFiles;
-    currentPreviewIndex = 0;
-    showFilePreview(pendingFilesQueue[0]);
+    await handleImmediateUpload(validFiles);
   }
 
-  async function showFilePreview(file) {
-    if (!previewBox || !file) return;
+  async function handleImmediateUpload(filesList) {
+    const total = filesList.length;
+    showToast(`Memproses ${total} kenangan ke Album Cinta...`, 'info');
 
-    const isVideo = file.type.startsWith('video/');
-    currentPreviewFileType = isVideo ? 'video' : 'image';
+    const btnTriggerAlbumUpload = document.getElementById('btnTriggerAlbumUpload');
+    const btnTriggerDropzoneUpload = document.getElementById('btnTriggerDropzoneUpload');
+    const origAlbumHtml = btnTriggerAlbumUpload ? btnTriggerAlbumUpload.innerHTML : '';
+    const origDropHtml = btnTriggerDropzoneUpload ? btnTriggerDropzoneUpload.innerHTML : '';
 
-    const fileSizeMb = (file.size / (1024 * 1024)).toFixed(2);
-    if (previewFileBadge) {
-      previewFileBadge.textContent = `${isVideo ? 'Video' : 'Foto'}: ${file.name} (${fileSizeMb} MB)`;
+    if (btnTriggerAlbumUpload) {
+      btnTriggerAlbumUpload.disabled = true;
+      btnTriggerAlbumUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    }
+    if (btnTriggerDropzoneUpload) {
+      btnTriggerDropzoneUpload.disabled = true;
+      btnTriggerDropzoneUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
     }
 
-    const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
-    if (previewTitleInput) {
-      previewTitleInput.value = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
-    }
+    let successCount = 0;
+    const todayFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    let lastSavedId = null;
 
-    if (isVideo) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        currentPreviewDataUrl = e.target.result;
-        if (previewImg) previewImg.style.display = 'none';
-        if (previewVideo) {
-          previewVideo.src = currentPreviewDataUrl;
-          previewVideo.style.display = 'block';
+    try {
+      for (let i = 0; i < total; i++) {
+        const file = filesList[i];
+        const isVideo = isVideoFile(file);
+        const rawTitle = file.name ? file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') : (isVideo ? 'Video Kenangan' : 'Foto Kenangan');
+        const cleanTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+
+        try {
+          if (isVideo) {
+            const videoThumb = await extractVideoThumbnail(file);
+            const momentItem = await saveNewUploadedMoment({
+              file: file,
+              blob: file,
+              dataUrl: '',
+              thumbUrl: videoThumb,
+              type: 'video',
+              title: cleanTitle,
+              caption: 'Video kenangan manis yang diabadikan bersama.',
+              date: todayFormatted,
+              category: 'user'
+            });
+            if (momentItem) {
+              lastSavedId = momentItem.id;
+              successCount++;
+            }
+          } else {
+            const dual = await compressImageDual(file);
+            if (dual) {
+              const momentItem = await saveNewUploadedMoment({
+                file: file,
+                blob: file,
+                dataUrl: dual.highRes,
+                thumbUrl: dual.thumb,
+                type: 'image',
+                title: cleanTitle,
+                caption: 'Foto kenangan manis yang tersimpan di Album Cinta kita.',
+                date: todayFormatted,
+                category: 'user'
+              });
+              if (momentItem) {
+                lastSavedId = momentItem.id;
+                successCount++;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Upload error for file:', file.name, err);
         }
-        previewBox.classList.add('active');
-        previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      };
-      reader.readAsDataURL(file);
-    } else {
-      const compressedUrl = await compressImageFile(file);
-      currentPreviewDataUrl = compressedUrl;
-
-      if (previewVideo) {
-        previewVideo.pause();
-        previewVideo.style.display = 'none';
       }
-      if (previewImg) {
-        previewImg.src = currentPreviewDataUrl;
-        previewImg.style.display = 'block';
+    } finally {
+      if (btnTriggerAlbumUpload) {
+        btnTriggerAlbumUpload.disabled = false;
+        btnTriggerAlbumUpload.innerHTML = origAlbumHtml || '<i class="fa-solid fa-cloud-arrow-up"></i><span>Upload Foto / Video</span>';
       }
-      previewBox.classList.add('active');
-      previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (btnTriggerDropzoneUpload) {
+        btnTriggerDropzoneUpload.disabled = false;
+        btnTriggerDropzoneUpload.innerHTML = origDropHtml || '<i class="fa-solid fa-photo-film"></i> Pilih Foto / Video';
+      }
     }
+
+    if (successCount > 0) {
+      if (window.triggerParticleBurst) {
+        window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+      }
+
+      showToast(
+        successCount === 1 
+          ? `Momen manis berhasil disimpan ke Album Cinta! ❤️💙` 
+          : `${successCount} foto & video berhasil disimpan ke Album Cinta! ❤️💙`,
+        'success'
+      );
+
+      setTimeout(() => {
+        const targetCard = lastSavedId 
+          ? document.querySelector(`.moment-card[data-id="${lastSavedId}"]`)
+          : document.getElementById('galleryGrid');
+        if (targetCard) {
+          targetCard.classList.add('new-moment-highlight');
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 250);
+    } else {
+      showToast('Gagal memproses file. Silakan coba kembali.', 'error');
+    }
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 
   function closePreview() {
@@ -938,9 +1435,11 @@ function setupDropZoneAndUpload() {
     }
     if (previewImg) previewImg.src = '';
     if (fileInput) fileInput.value = '';
-    if (cameraInput) cameraInput.value = '';
+    if (albumQuickInput) albumQuickInput.value = '';
     pendingFilesQueue = [];
     currentPreviewDataUrl = null;
+    currentPreviewBlob = null;
+    currentPreviewThumbUrl = null;
   }
 
   if (btnCancelUpload) {
@@ -948,8 +1447,8 @@ function setupDropZoneAndUpload() {
   }
 
   if (btnConfirmUpload) {
-    btnConfirmUpload.addEventListener('click', () => {
-      if (!currentPreviewDataUrl || pendingFilesQueue.length === 0) return;
+    btnConfirmUpload.addEventListener('click', async () => {
+      if ((!currentPreviewDataUrl && !currentPreviewBlob) || pendingFilesQueue.length === 0) return;
 
       const file = pendingFilesQueue[currentPreviewIndex];
       const title = previewTitleInput ? previewTitleInput.value.trim() : '';
@@ -971,75 +1470,165 @@ function setupDropZoneAndUpload() {
       btnConfirmUpload.disabled = true;
       btnConfirmUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
 
-      saveNewUploadedMoment({
+      let finalThumb = currentPreviewThumbUrl || currentPreviewDataUrl;
+      let finalBlob = currentPreviewBlob || (file instanceof Blob ? file : null);
+
+      if (currentPreviewFileType === 'video' && (!finalThumb || finalThumb.length > 500000) && finalBlob) {
+        finalThumb = await extractVideoThumbnail(finalBlob);
+      }
+
+      const momentItem = await saveNewUploadedMoment({
         file: file,
-        dataUrl: currentPreviewDataUrl,
+        blob: finalBlob,
+        dataUrl: currentPreviewDataUrl || '',
+        thumbUrl: finalThumb,
         type: currentPreviewFileType,
-        title: title || file.name.replace(/\.[^/.]+$/, ""),
+        title: title || (file ? file.name.replace(/\.[^/.]+$/, "") : 'Momen Baru'),
         caption: caption || 'Momen manis yang diabadikan bersama.',
         date: formattedDate,
         category: category
       });
 
+      if (window.triggerParticleBurst) {
+        window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+      }
+
+      showToast(`Momen "${escapeHtml(title || 'Baru')}" berhasil disimpan ke Album Cinta! ❤️💙`, 'success');
+
       setTimeout(() => {
         btnConfirmUpload.disabled = false;
         btnConfirmUpload.innerHTML = '<i class="fa-solid fa-heart-circle-plus"></i> Simpan ke Galeri Cinta';
         closePreview();
+        if (momentItem) {
+          const card = document.querySelector(`.moment-card[data-id="${momentItem.id}"]`);
+          if (card) {
+            card.classList.add('new-moment-highlight');
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
       }, 300);
     });
   }
 }
 
-function saveNewUploadedMoment({ file, dataUrl, type, title, caption, date, category }) {
+async function saveNewUploadedMoment({ file, blob, dataUrl, thumbUrl, type, title, caption, date, category }) {
   const newId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-  const momentItem = {
-    id: newId,
-    name: file.name,
-    type: type,
-    src: dataUrl,
-    thumb: dataUrl,
-    title: title,
-    caption: caption,
-    date: date,
-    year: category || 'user',
-    timestamp: Date.now(),
-    isPreset: false
-  };
 
-  const localMoments = getStoredUserMoments();
-  localMoments.unshift(momentItem);
-  persistUserMoments(localMoments);
-
-  if (db) {
-    try {
-      const tx = db.transaction('moments', 'readwrite');
-      const store = tx.objectStore('moments');
-      store.add(momentItem);
-    } catch (err) {
-      console.warn('IndexedDB write warning:', err);
-    }
+  let mediaBlob = null;
+  if (blob instanceof Blob) {
+    mediaBlob = blob;
+  } else if (file instanceof Blob) {
+    mediaBlob = file;
   }
 
-  allMomentsCache = [momentItem, ...allMomentsCache.filter(m => m.id !== newId)];
+  let displaySrc = dataUrl || '';
+  if (!displaySrc && mediaBlob) {
+    displaySrc = URL.createObjectURL(mediaBlob);
+  }
+
+  let finalThumb = thumbUrl || displaySrc;
+  if (!finalThumb && type === 'video') {
+    finalThumb = createVideoPlaceholder(title || (file ? file.name : 'Video Kenangan'));
+  }
+
+  const momentItem = {
+    id: newId,
+    name: file && file.name ? file.name : (title + (type === 'video' ? '.mp4' : '.jpg')),
+    type: type,
+    blob: mediaBlob,
+    src: displaySrc,
+    thumb: finalThumb,
+    thumbUrl: finalThumb,
+    title: title || 'Momen Spesial',
+    caption: caption || 'Momen manis yang diabadikan bersama.',
+    date: date || 'Hari Ini',
+    year: category || 'user',
+    timestamp: Date.now(),
+    isPreset: false,
+    isUserUpload: true
+  };
+
+  await dbSaveAlbumPhoto(momentItem);
+
+  allMomentsCache = [momentItem, ...allMomentsCache.filter(m => String(m.id) !== String(newId))];
+
+  // Switch filter to 'all' so new upload is immediately rendered and visible
+  currentFilter = 'all';
+  const filterBtns = document.querySelectorAll('.gallery-filters .filter-btn:not(.btn-clear-all)');
+  filterBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
 
   applyFilterAndRender();
 
-  if (window.triggerParticleBurst) {
-    window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
-  }
-
-  showToast(`Momen "${escapeHtml(title)}" berhasil disimpan ke Galeri Cinta! ❤️💙`, 'success');
-
-  setTimeout(() => {
-    const newCard = document.querySelector(`.moment-card[data-id="${newId}"]`);
-    if (newCard) {
-      newCard.classList.add('new-moment-highlight');
-      newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, 100);
+  return momentItem;
 }
 
-function setDirectMediaPreview({ type, dataUrl, defaultTitle, fileInfo }) {
+function exportAlbumBackup() {
+  dbGetAllAlbumPhotos().then(photos => {
+    const userPhotos = photos.filter(p => !p.isPreset);
+    if (userPhotos.length === 0) {
+      showToast('Belum ada foto yang diunggah untuk dicadangkan.', 'info');
+      return;
+    }
+    const backupData = {
+      app: 'Happy-7th-Anniversary-Album',
+      exportDate: new Date().toISOString(),
+      photos: userPhotos.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        thumb: p.thumb || p.thumbUrl || '',
+        src: (p.src && !p.src.startsWith('blob:') && p.src.length < 500000) ? p.src : '',
+        title: p.title,
+        caption: p.caption,
+        date: p.date,
+        year: p.year,
+        timestamp: p.timestamp,
+        isPreset: false,
+        isUserUpload: true
+      }))
+    };
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup-album-cinta-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Berhasil mendownload cadangan ${userPhotos.length} foto album! 💾`, 'success');
+  });
+}
+
+function importAlbumBackup(file) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data || !Array.isArray(data.photos)) {
+        showToast('Format file cadangan tidak valid.', 'error');
+        return;
+      }
+      let imported = 0;
+      for (const p of data.photos) {
+        if (p.thumb || p.src) {
+          await dbSaveAlbumPhoto(p);
+          imported++;
+        }
+      }
+      await loadGalleryMoments();
+      showToast(`Sukses memulihkan ${imported} foto ke Album! ❤️💙`, 'success');
+    } catch (err) {
+      showToast('Gagal membaca file cadangan: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function setDirectMediaPreview({ type, dataUrl, blob = null, thumbUrl = null, defaultTitle = '', fileInfo = '' }) {
   const previewBox = document.getElementById('uploadPreviewBox');
   const previewImg = document.getElementById('previewImg');
   const previewVideo = document.getElementById('previewVideo');
@@ -1051,7 +1640,9 @@ function setDirectMediaPreview({ type, dataUrl, defaultTitle, fileInfo }) {
 
   currentPreviewFileType = type;
   currentPreviewDataUrl = dataUrl;
-  pendingFilesQueue = [{ name: defaultTitle + (type === 'video' ? '.mp4' : '.jpg') }];
+  currentPreviewBlob = blob;
+  currentPreviewThumbUrl = thumbUrl || (type === 'image' ? dataUrl : null);
+  pendingFilesQueue = [blob || { name: defaultTitle + (type === 'video' ? '.mp4' : '.jpg') }];
   currentPreviewIndex = 0;
 
   if (previewFileBadge) {
@@ -1244,25 +1835,25 @@ function initLiveCameraFeature() {
       }
     };
 
-    mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = async () => {
       clearInterval(recordTimerInterval);
       if (recBadge) recBadge.style.display = 'none';
       if (recordVideoBtn) recordVideoBtn.classList.remove('recording');
 
       const blob = new Blob(recordedVideoChunks, { type: mediaRecorder.mimeType || 'video/mp4' });
-      const reader = new FileReader();
-      reader.onload = () => {
-        const videoDataUrl = reader.result;
-        closeCamera();
-        const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        setDirectMediaPreview({
-          type: 'video',
-          dataUrl: videoDataUrl,
-          defaultTitle: `Video Rekaman Kita (${timeStr})`,
-          fileInfo: `Rekaman Kamera (${(blob.size / 1024 / 1024).toFixed(2)} MB)`
-        });
-      };
-      reader.readAsDataURL(blob);
+      const videoObjectUrl = URL.createObjectURL(blob);
+      const thumb = await extractVideoThumbnail(blob);
+      closeCamera();
+
+      const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      setDirectMediaPreview({
+        type: 'video',
+        dataUrl: videoObjectUrl,
+        blob: blob,
+        thumbUrl: thumb,
+        defaultTitle: `Video Rekaman Kita (${timeStr})`,
+        fileInfo: `Rekaman Kamera (${(blob.size / 1024 / 1024).toFixed(2)} MB)`
+      });
     };
 
     mediaRecorder.start(250);
@@ -1799,59 +2390,61 @@ function initGalleryHighlights() {
 }
 
 /* Gallery Moments Loader & Renderer */
-function loadGalleryMoments() {
-  const localMoments = getStoredUserMoments();
-
-  if (!db) {
-    allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
-    applyFilterAndRender();
-    return;
-  }
-
+async function loadGalleryMoments() {
   try {
-    const tx = db.transaction('moments', 'readonly');
-    const store = tx.objectStore('moments');
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      const dbRaw = request.result || [];
-      const dbMoments = dbRaw.map(u => ({
+    const userPhotos = await dbGetAllAlbumPhotos();
+    const formattedUserPhotos = (userPhotos || []).map(u => {
+      let src = u.src || u.dataUrl || '';
+      if (u.blob instanceof Blob) {
+        src = URL.createObjectURL(u.blob);
+      }
+      let thumb = u.thumb || u.thumbUrl || src || '';
+      if (!thumb && u.type === 'video') {
+        thumb = createVideoPlaceholder(u.title || u.name || 'Video Kita');
+      }
+      return {
         id: u.id,
-        src: u.dataUrl || u.src,
-        thumb: u.dataUrl || u.thumb || u.src,
-        title: u.title || u.caption || u.name || 'Momen Spesial',
-        caption: u.caption || 'Kenangan manis yang diunggah ke dalam web.',
+        src: src || thumb,
+        blob: u.blob || null,
+        thumb: thumb,
+        thumbUrl: thumb,
+        title: u.title || u.name || 'Momen Spesial',
+        caption: u.caption || 'Momen kenangan manis yang tersimpan di Album Cinta.',
         date: u.date || 'Unggahan Baru',
         year: u.year || 'user',
         timestamp: u.timestamp || Date.now(),
         type: u.type || 'image',
-        isPreset: false
-      }));
+        isPreset: false,
+        isUserUpload: true
+      };
+    });
 
-      const mergedMap = new Map();
-      localMoments.forEach(m => mergedMap.set(String(m.id), m));
-      dbMoments.forEach(m => mergedMap.set(String(m.id), m));
-      const combinedUserMoments = Array.from(mergedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    const map = new Map();
+    formattedUserPhotos.forEach(p => map.set(String(p.id), p));
+    const dedupedUserPhotos = Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-      allMomentsCache = [...combinedUserMoments, ...ASET_FOTO_ITEMS];
-      applyFilterAndRender();
-    };
-
-    request.onerror = () => {
-      allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
-      applyFilterAndRender();
-    };
+    allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
+    applyFilterAndRender();
   } catch (err) {
-    allMomentsCache = [...localMoments, ...ASET_FOTO_ITEMS];
+    console.warn('Error loading gallery moments:', err);
+    allMomentsCache = [...getStoredUserMoments(), ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
   }
 }
 
 function applyFilterAndRender() {
   const userCount = allMomentsCache.filter(item => !item.isPreset).length;
+  const totalCount = allMomentsCache.length;
+
+  const countAllEl = document.getElementById('filterCountAll');
+  if (countAllEl) countAllEl.textContent = totalCount;
+
+  const countUserEl = document.getElementById('filterCountUser');
+  if (countUserEl) countUserEl.textContent = userCount;
+
   const userFilterBtn = document.querySelector('.filter-btn[data-filter="user"]');
   if (userFilterBtn) {
-    userFilterBtn.innerHTML = `<i class="fa-solid fa-sparkles"></i> Unggahan Baru (${userCount})`;
+    userFilterBtn.innerHTML = `<i class="fa-solid fa-sparkles text-red"></i> Unggahan Kita (${userCount})`;
   }
 
   currentVisibleMoments = allMomentsCache.filter(item => {
@@ -1873,9 +2466,9 @@ function renderGalleryGrid(moments) {
   if (moments.length === 0) {
     grid.innerHTML = `
       <div class="gallery-empty" style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #94a3b8;">
-        <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: #00b4d8; margin-bottom: 15px;" aria-hidden="true"></i>
+        <i class="fa-solid fa-camera-retro" style="font-size: 3rem; color: #e63946; margin-bottom: 15px;" aria-hidden="true"></i>
         <h3 style="color: #fff; font-size: 1.3rem; margin-bottom: 8px;">Belum ada momen untuk kategori ini</h3>
-        <p style="font-size: 0.9rem;">Pilih kategori lain atau tambahkan foto kenangan baru di atas!</p>
+        <p style="font-size: 0.9rem;">Klik tombol "Upload Foto / Video" di atas untuk menambahkan kenangan manis berdua!</p>
       </div>
     `;
     return;
@@ -1883,21 +2476,27 @@ function renderGalleryGrid(moments) {
 
   moments.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'moment-card';
+    card.className = `moment-card ${!item.isPreset ? 'user-uploaded' : ''}`;
     card.dataset.id = item.id;
+    card.dataset.year = item.year || 'all';
 
-    const mediaHtml = item.type === 'video'
-      ? `<video src="${item.src}" preload="metadata" muted playsinline></video>`
-      : `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
+    const isVideo = item.type === 'video';
+    const mediaHtml = isVideo
+      ? `<div class="moment-media-video-wrap">
+          <img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src || ''}'">
+          <span class="video-play-indicator" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
+        </div>`
+      : `<img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
 
-    const badgeText = item.isPreset ? (item.year || 'Kenangan') : 'Unggahan Baru';
-    const badgeIcon = item.type === 'video' ? 'fa-video' : (item.isPreset ? 'fa-heart' : 'fa-sparkles');
-    const overlayIcon = item.type === 'video' ? 'fa-play' : 'fa-expand';
+    const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isVideo ? 'Video Kita' : 'Foto Kita');
+    const badgeIcon = isVideo ? 'fa-video' : (item.isPreset ? 'fa-heart' : 'fa-sparkles');
+    const overlayIcon = isVideo ? 'fa-play' : 'fa-magnifying-glass-plus';
 
     card.innerHTML = `
-      <div class="moment-media" role="button" tabindex="0" aria-label="Buka foto ${escapeHtml(item.title)} di resolusi penuh">
+      <div class="polaroid-tape" aria-hidden="true"></div>
+      <div class="moment-media" role="button" tabindex="0" aria-label="Buka ${isVideo ? 'video' : 'foto'} ${escapeHtml(item.title)} di resolusi penuh">
         ${mediaHtml}
-        <span class="media-type-badge ${item.type === 'video' ? 'video' : 'photo'}">
+        <span class="media-type-badge ${isVideo ? 'video' : 'photo'} ${!item.isPreset ? 'user-badge' : ''}">
           <i class="fa-solid ${badgeIcon}"></i> ${badgeText}
         </span>
         <div class="moment-overlay" aria-hidden="true">
@@ -1905,19 +2504,22 @@ function renderGalleryGrid(moments) {
         </div>
       </div>
       <div class="moment-details">
-        <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">${escapeHtml(item.title)}</div>
-        <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">${escapeHtml(item.caption)}</p>
-        <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
-          <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> ${item.date}</span>
-          ${!item.isPreset ? `
-            <button class="moment-del-btn" onclick="deleteMoment('${item.id}')" title="Hapus Momen Tambahan" aria-label="Hapus momen tambahan ini">
-              <i class="fa-solid fa-trash-can"></i>
+        <h3 class="moment-caption">${escapeHtml(item.title)}</h3>
+        <p class="moment-desc">${escapeHtml(item.caption)}</p>
+        <div class="moment-footer">
+          <span class="moment-date"><i class="fa-regular fa-calendar-check"></i> ${item.date}</span>
+          <div class="moment-card-actions">
+            <button type="button" class="btn-card-star" onclick="setAsHeroPhoto('${item.id}')" title="Jadikan Sorotan Utama di Beranda" aria-label="Jadikan sorotan utama">
+              <i class="fa-regular fa-star"></i>
             </button>
-          ` : `
-            <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-heart"></i> Abadi
-            </span>
-          `}
+            ${!item.isPreset ? `
+              <button type="button" class="moment-del-btn" onclick="deleteMoment('${item.id}')" title="Hapus Foto ini dari Album" aria-label="Hapus foto ini">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            ` : `
+              <span class="badge-permanent"><i class="fa-solid fa-heart"></i> Kenangan</span>
+            `}
+          </div>
         </div>
       </div>
     `;
@@ -1940,28 +2542,47 @@ function renderGalleryGrid(moments) {
   });
 }
 
-window.deleteMoment = function(id) {
-  if (!confirm('Apakah kamu yakin ingin menghapus momen kenangan ini?')) return;
+window.setAsHeroPhoto = function(id) {
+  const item = allMomentsCache.find(m => String(m.id) === String(id));
+  if (!item) return;
 
-  let localList = getStoredUserMoments();
-  localList = localList.filter(m => String(m.id) !== String(id));
-  persistUserMoments(localList);
+  const heroImg = document.getElementById('heroFeaturedImg');
+  const heroTitle = document.getElementById('heroPhotoTitle');
+  const heroDate = document.getElementById('heroPhotoDate');
+  const heroPolaroid = document.getElementById('heroPolaroid');
 
-  if (db) {
-    try {
-      const tx = db.transaction('moments', 'readwrite');
-      const store = tx.objectStore('moments');
-      store.delete(id);
-    } catch (err) {
-      console.warn('IndexedDB delete warning:', err);
-    }
+  if (heroImg) {
+    heroImg.src = item.src || item.thumb;
+    heroImg.onerror = () => { if (item.thumb) heroImg.src = item.thumb; };
+    heroImg.alt = item.title;
   }
+  if (heroTitle) heroTitle.textContent = `${item.title} ❤️`;
+  if (heroDate) heroDate.innerHTML = `<i class="fa-regular fa-calendar"></i> ${item.date}`;
+
+  if (heroPolaroid) {
+    heroPolaroid.classList.remove('switched');
+    void heroPolaroid.offsetWidth;
+    heroPolaroid.classList.add('switched');
+  }
+
+  showToast(`Foto "${escapeHtml(item.title)}" dijadikan sorotan utama di Beranda! 🌟❤️`, 'success');
+
+  const heroSec = document.querySelector('.hero-section');
+  if (heroSec) {
+    heroSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+window.deleteMoment = async function(id) {
+  if (!confirm('Apakah kamu yakin ingin menghapus foto kenangan ini dari Album?')) return;
+
+  await dbDeleteAlbumPhoto(id);
 
   allMomentsCache = allMomentsCache.filter(m => String(m.id) !== String(id));
 
   closeLightbox();
   applyFilterAndRender();
-  showToast('Momen kenangan berhasil dihapus.', 'info');
+  showToast('Foto kenangan berhasil dihapus dari album.', 'info');
 };
 
 function setupGalleryFilters() {
@@ -2020,6 +2641,16 @@ function setupLightbox() {
     deleteBtn.addEventListener('click', () => {
       if (activeMomentId !== null) {
         deleteMoment(activeMomentId);
+      }
+    });
+  }
+
+  const starBtn = document.getElementById('lightboxStarBtn');
+  if (starBtn) {
+    starBtn.addEventListener('click', () => {
+      if (activeMomentId !== null) {
+        setAsHeroPhoto(activeMomentId);
+        closeLightbox();
       }
     });
   }
@@ -2126,8 +2757,8 @@ function renderLightboxCurrent() {
 
   if (mediaWrapper) {
     mediaWrapper.innerHTML = item.type === 'video'
-      ? `<video src="${item.src}" controls autoplay style="max-height: 65vh; max-width: 100%; border-radius: 12px;"></video>`
-      : `<img src="${item.src}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.thumb}'" style="max-height: 65vh; max-width: 100%; border-radius: 12px;">`;
+      ? `<video src="${item.src}" controls autoplay playsinline style="max-height: 68vh; max-width: 100%; border-radius: 14px; background: #000; box-shadow: 0 10px 40px rgba(0,0,0,0.8);"></video>`
+      : `<img src="${item.src}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.thumb}'" style="max-height: 68vh; max-width: 100%; border-radius: 14px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">`;
   }
 
   if (titleEl) titleEl.textContent = item.title;
@@ -2153,7 +2784,14 @@ function renderLightboxCurrent() {
 function closeLightbox() {
   const modal = document.getElementById('lightboxModal');
   const mediaWrapper = document.getElementById('lightboxMediaWrapper');
-  if (mediaWrapper) mediaWrapper.innerHTML = '';
+  if (mediaWrapper) {
+    const video = mediaWrapper.querySelector('video');
+    if (video) {
+      video.pause();
+      video.src = '';
+    }
+    mediaWrapper.innerHTML = '';
+  }
   if (modal) {
     modal.classList.remove('active');
     modal.setAttribute('aria-hidden', 'true');

@@ -499,9 +499,9 @@
     <!-- Photo & Video Memory Gallery with 24 Moments & IndexedDB Upload -->
     <section id="gallery" class="section gallery-section">
       <div class="section-header">
-        <span class="section-tag"><i class="fa-solid fa-images"></i> Galeri Kenangan</span>
-        <h2 class="section-title">Jejak Momen Indah Kita</h2>
-        <p class="section-subtitle">24 foto kenangan manis perjalanan cinta kita (Maret 2025 s/d Oktober 2026)</p>
+        <span class="section-tag"><i class="fa-solid fa-camera-retro text-red"></i> Album & Galeri Cinta</span>
+        <h2 class="section-title">Album Kenangan & Jejak Cinta Kita</h2>
+        <p class="section-subtitle">Koleksi foto romantis perjalanan cinta kita. Unggah foto baru kapan pun — otomatis tersimpan permanen di album perangkat ini dan langsung bisa dilihat! ❤️💙</p>
       </div>
 
       <!-- Highlights Milestone Bar -->
@@ -546,6 +546,34 @@
         </div>
       </div>
 
+      <!-- Album Quick Actions & Upload Hub -->
+      <div class="album-quick-hub" id="albumQuickHub">
+        <div class="album-hub-info">
+          <div class="album-hub-badge"><i class="fa-solid fa-shield-heart text-red"></i> Penyimpanan Album Aktif (IndexedDB)</div>
+          <p class="album-hub-desc">Setiap foto kenangan yang diupload tersimpan aman & otomatis muncul di album ini.</p>
+        </div>
+        <div class="album-hub-actions">
+          <button type="button" class="btn-album-action btn-album-primary" id="btnTriggerAlbumUpload" aria-label="Upload foto atau video ke album">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Upload Foto / Video</span>
+          </button>
+          <input type="file" id="albumQuickInput" accept="image/*,video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi,.jpg,.jpeg,.png,.gif,.webp,.heic" multiple style="display:none;">
+          <button type="button" class="btn-album-action btn-album-camera" id="albumQuickCameraBtn" aria-label="Buka kamera langsung">
+            <i class="fa-solid fa-camera"></i>
+            <span>Kamera</span>
+          </button>
+          <button type="button" class="btn-album-action btn-album-secondary" id="btnBackupAlbum" title="Download cadangan semua foto yang diunggah" aria-label="Download backup foto">
+            <i class="fa-solid fa-download"></i>
+            <span>Backup Album</span>
+          </button>
+          <button type="button" class="btn-album-action btn-album-secondary" id="btnRestoreAlbum" title="Pulihkan / Impor foto dari file cadangan .json" aria-label="Impor backup album">
+            <i class="fa-solid fa-file-import"></i>
+            <span>Impor Cadangan</span>
+          </button>
+          <input type="file" id="albumRestoreInput" accept=".json" style="display:none;">
+        </div>
+      </div>
+
       <!-- Upload Zone for Additional Memories -->
       <div class="upload-container">
         <div class="upload-dropzone" id="dropZone">
@@ -556,10 +584,10 @@
           <p>Pilih atau tarik foto (JPG, PNG, GIF) atau video (MP4, WEBM) momen manis berdua kita</p>
 
           <div class="upload-action-buttons">
-            <label class="btn-choose-file" tabindex="0" role="button" aria-label="Pilih foto atau video dari perangkat">
+            <button type="button" class="btn-choose-file" id="btnTriggerDropzoneUpload" aria-label="Pilih foto atau video dari perangkat">
               <i class="fa-solid fa-photo-film"></i> Pilih Foto / Video
-              <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none;">
-            </label>
+            </button>
+            <input type="file" id="fileInput" accept="image/*,video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi,.jpg,.jpeg,.png,.gif,.webp,.heic" multiple style="display:none;">
             <button type="button" class="btn-camera-file" id="openLiveCameraBtn" aria-label="Buka kamera perangkat langsung">
               <i class="fa-solid fa-camera"></i> Buka Kamera
             </button>
@@ -627,11 +655,11 @@
 
       <!-- Filter Controls -->
       <div class="gallery-filters" role="tablist" aria-label="Filter galeri">
-        <button class="filter-btn active" data-filter="all"><i class="fa-solid fa-border-all"></i> Semua (24+ Momen)</button>
-        <button class="filter-btn" data-filter="2025"><i class="fa-regular fa-calendar"></i> Tahun 2025 (15)</button>
-        <button class="filter-btn" data-filter="2026"><i class="fa-regular fa-calendar-check"></i> Tahun 2026 (9)</button>
-        <button class="filter-btn" data-filter="user"><i class="fa-solid fa-sparkles"></i> Unggahan Baru</button>
-        <button class="filter-btn btn-clear-all" id="clearAllBtn" title="Hapus foto/video tambahan baru yang Anda upload"><i class="fa-solid fa-trash-can"></i> Hapus Unggahan Baru</button>
+        <button class="filter-btn active" data-filter="all"><i class="fa-solid fa-border-all"></i> Semua (<span id="filterCountAll">24</span>)</button>
+        <button class="filter-btn filter-btn-user" data-filter="user"><i class="fa-solid fa-sparkles text-red"></i> Foto & Video Unggahan (<span id="filterCountUser">0</span>)</button>
+        <button class="filter-btn" data-filter="2026"><i class="fa-regular fa-calendar-check text-blue"></i> Tahun 2026 (9)</button>
+        <button class="filter-btn" data-filter="2025"><i class="fa-regular fa-calendar text-red"></i> Tahun 2025 (15)</button>
+        <button class="filter-btn btn-clear-all" id="clearAllBtn" title="Hapus foto/video tambahan baru yang Anda upload"><i class="fa-solid fa-trash-can"></i> Bersihkan Unggahan</button>
       </div>
 
       <!-- Gallery Grid -->
@@ -1256,6 +1284,9 @@
           <p id="lightboxCaption" class="lightbox-caption">Deskripsi momen cinta kita</p>
           
           <div class="lightbox-actions-row">
+            <button type="button" class="btn-lightbox-action btn-lightbox-star" id="lightboxStarBtn" title="Jadikan foto ini sorotan utama di Beranda">
+              <i class="fa-regular fa-star text-red"></i> Jadikan Sorotan Utama
+            </button>
             <a id="lightboxOriginalLink" target="_blank" rel="noopener noreferrer" class="btn-lightbox-action" title="Buka foto asli resolusi penuh">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Resolusi Penuh
             </a>

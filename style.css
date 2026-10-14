@@ -1834,10 +1834,13 @@ body::before {
 .btn-choose-file {
   background: var(--gradient-love-joy);
   color: white;
+  font-family: inherit;
   font-size: 0.88rem;
   font-weight: 600;
   padding: 10px 22px;
   border-radius: 30px;
+  border: none;
+  outline: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -2187,76 +2190,244 @@ body::before {
 }
 
 /* Gallery Grid */
+/* ==========================================================
+   ALBUM QUICK HUB TOOLBAR
+   ========================================================== */
+.album-quick-hub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.album-hub-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.album-hub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(230, 57, 70, 0.18);
+  border: 1px solid rgba(230, 57, 70, 0.38);
+  padding: 4px 14px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.album-hub-desc {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.album-hub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-album-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  text-decoration: none;
+}
+
+.btn-album-primary {
+  background: linear-gradient(135deg, #e63946 0%, #457b9d 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(230, 57, 70, 0.4);
+}
+
+.btn-album-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(230, 57, 70, 0.6);
+  filter: brightness(1.1);
+}
+
+.btn-album-camera {
+  background: rgba(0, 180, 216, 0.15);
+  color: #00b4d8;
+  border: 1px solid rgba(0, 180, 216, 0.4);
+}
+
+.btn-album-camera:hover {
+  background: rgba(0, 180, 216, 0.28);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.btn-album-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.btn-album-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* ==========================================================
+   MODERN POLAROID GALLERY GRID
+   ========================================================== */
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 24px;
 }
 
 .moment-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  overflow: hidden;
+  background: #141728;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 12px 12px 16px 12px;
   position: relative;
-  transition: var(--transition-smooth);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.moment-card.user-uploaded {
+  border-color: rgba(230, 57, 70, 0.45);
+  background: linear-gradient(180deg, #181d33 0%, #111424 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 18px rgba(230, 57, 70, 0.15);
 }
 
 .moment-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(230, 57, 70, 0.4);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px var(--blue-glow);
+  transform: translateY(-8px) rotate(0.6deg);
+  border-color: rgba(230, 57, 70, 0.6);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(230, 57, 70, 0.3);
+}
+
+.moment-card:nth-child(even):hover {
+  transform: translateY(-8px) rotate(-0.6deg);
+}
+
+.moment-card.new-moment-highlight {
+  animation: momentHighlightPulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) 2;
+  border-color: #e63946 !important;
+}
+
+@keyframes momentHighlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.9), 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: scale(1.04);
+  }
+  50% {
+    box-shadow: 0 0 25px 6px rgba(0, 180, 216, 0.7), 0 15px 35px rgba(0, 0, 0, 0.6);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 57, 70, 0), 0 10px 30px rgba(0, 0, 0, 0.35);
+    transform: scale(1);
+  }
+}
+
+/* Polaroid Washi Tape on top */
+.moment-card .polaroid-tape {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(4px);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  z-index: 5;
 }
 
 .moment-media {
   position: relative;
   width: 100%;
-  height: 220px;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-height: 220px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #0d0e1a;
+  background: #080911;
   cursor: pointer;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 .moment-media img, .moment-media video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .moment-card:hover .moment-media img,
 .moment-card:hover .moment-media video {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 .media-type-badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(0, 0, 0, 0.65);
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   color: white;
-  font-size: 0.72rem;
-  padding: 4px 10px;
+  font-size: 0.74rem;
+  padding: 4px 11px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 5px;
+  z-index: 3;
 }
 
 .media-type-badge.photo { color: var(--red-light); }
 .media-type-badge.video { color: var(--blue-sky); }
 
+.media-type-badge.user-badge {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.85), rgba(69, 123, 157, 0.85));
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 10px rgba(230, 57, 70, 0.4);
+}
+
 .moment-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
+  z-index: 2;
 }
 
 .moment-card:hover .moment-overlay {
@@ -2265,54 +2436,156 @@ body::before {
 
 .moment-overlay i {
   color: white;
-  font-size: 2rem;
+  font-size: 1.6rem;
   background: rgba(230, 57, 70, 0.85);
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.moment-media-video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.video-play-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.78);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.3rem;
+  padding-left: 3px;
+  z-index: 2;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.moment-card:hover .video-play-indicator {
+  transform: translate(-50%, -50%) scale(1.15);
+  background: linear-gradient(135deg, #e63946, #457b9d);
+  box-shadow: 0 8px 25px rgba(230, 57, 70, 0.65);
 }
 
 .moment-details {
-  padding: 16px;
+  padding: 12px 6px 4px 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .moment-caption {
-  font-size: 0.95rem;
+  font-size: 1.02rem;
   font-weight: 600;
-  color: #fff;
-  line-height: 1.4;
-  word-break: break-word;
+  color: #ffffff;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.moment-desc {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 2px 0 6px 0;
+  font-style: italic;
 }
 
 .moment-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.moment-date {
   font-size: 0.78rem;
-  color: var(--text-dim);
-  margin-top: 6px;
+  color: var(--blue-sky);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.moment-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-card-star {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fbbf24;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 0.82rem;
+}
+
+.btn-card-star:hover {
+  background: #fbbf24;
+  color: #000;
+  transform: scale(1.15);
 }
 
 .moment-del-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.35);
   color: #ff6b6b;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  padding: 4px;
-  font-size: 0.85rem;
-  opacity: 0.7;
-  transition: var(--transition-smooth);
+  transition: all 0.25s ease;
+  font-size: 0.8rem;
 }
 
 .moment-del-btn:hover {
-  opacity: 1;
-  transform: scale(1.2);
+  background: #ff6b6b;
+  color: #fff;
+  transform: scale(1.15);
+}
+
+.badge-permanent {
+  font-size: 0.72rem;
+  color: #ff758f;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes newMomentHighlightPulse {
+  0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.8); }
+  50% { box-shadow: 0 0 35px 8px rgba(230, 57, 70, 0.7), 0 0 20px 4px rgba(0, 180, 216, 0.5); }
+  100% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); }
+}
+
+.moment-card.new-moment-highlight {
+  animation: newMomentHighlightPulse 3s ease-out;
+  border-color: #e63946 !important;
 }
 
 /* Empty State */
@@ -3424,24 +3697,164 @@ body::before {
     border-radius: 12px;
   }
 
-  /* Upload Dropzone */
-  .upload-dropzone {
-    padding: 22px 14px;
-    border-radius: 18px;
+  /* ==========================================================
+     ALBUM QUICK HUB & UPLOAD TOOLS (SMARTPHONE APP PATTERN)
+     ========================================================== */
+  .album-quick-hub {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 14px;
+    border-radius: 20px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
-  .upload-inputs {
+
+  .album-hub-info {
+    text-align: center;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .album-hub-badge {
+    font-size: 0.78rem;
+    padding: 5px 14px;
+    justify-content: center;
+    align-self: center;
+  }
+
+  .album-hub-desc {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: #cbd5e1;
+  }
+
+  .album-hub-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .album-hub-actions .btn-album-primary {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    font-size: 0.95rem;
+    border-radius: 14px;
+  }
+
+  .album-hub-actions .btn-album-camera,
+  .album-hub-actions .btn-album-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 4px;
+    font-size: 0.76rem;
+    min-height: 44px;
+    border-radius: 12px;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .album-hub-actions .btn-album-camera span,
+  .album-hub-actions .btn-album-secondary span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Upload Dropzone & Action Buttons */
+  .upload-dropzone {
+    padding: 20px 14px;
+    border-radius: 20px;
+  }
+
+  .upload-dropzone h3 {
+    font-size: 1.15rem;
+    margin-bottom: 6px;
+  }
+
+  .upload-dropzone p {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .upload-action-buttons {
+    display: flex;
     flex-direction: column;
     width: 100%;
     gap: 10px;
+    margin: 14px 0 10px 0;
   }
-  .caption-input {
-    min-width: 100%;
-    font-size: 16px !important; /* Prevents auto zoom in iOS Safari */
-  }
-  .btn-choose-file {
+
+  .btn-choose-file,
+  .btn-camera-file {
     width: 100%;
     justify-content: center;
-    min-height: 44px;
+    min-height: 46px;
+    font-size: 0.92rem;
+    border-radius: 25px;
+  }
+
+  .upload-tip {
+    font-size: 0.74rem;
+    line-height: 1.35;
+    display: block;
+    margin-top: 6px;
+  }
+
+  /* Upload Preview Box */
+  .upload-preview-box {
+    padding: 16px 12px;
+    margin-top: 18px;
+    border-radius: 16px;
+  }
+
+  .preview-header-title {
+    font-size: 0.92rem;
+  }
+
+  .preview-file-badge {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+
+  .preview-media-wrapper {
+    height: 190px;
+    border-radius: 12px;
+  }
+
+  .upload-field-input {
+    font-size: 16px !important; /* Prevents auto zoom in iOS Safari */
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .preview-row-two {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .preview-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .btn-save-moment {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+    font-size: 0.94rem;
+  }
+
+  .btn-cancel-moment {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    min-height: 42px;
+    font-size: 0.88rem;
   }
 
   /* Gallery Filters: Horizontal Swipe Strip */
@@ -3455,100 +3868,176 @@ body::before {
     margin: 6px 0 24px 0;
     scrollbar-width: none;
   }
+
   .gallery-filters::-webkit-scrollbar {
     display: none;
   }
+
   .filter-btn {
     white-space: nowrap;
     flex-shrink: 0;
     padding: 8px 16px;
-    min-height: 40px;
+    min-height: 42px;
     font-size: 0.82rem;
   }
+
   .btn-clear-all {
     margin-left: 0;
   }
 
-  /* Gallery Grid: 2-Column Photo Feed on Phones */
+  /* Gallery Grid: Natural 1:1 Aspect Ratio Polaroid Feed */
   .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
+
   .moment-card {
+    padding: 8px 8px 10px 8px;
     border-radius: 14px;
   }
+
+  .moment-card .polaroid-tape {
+    width: 44px;
+    height: 12px;
+    top: -5px;
+  }
+
   .moment-media {
-    height: 145px;
+    min-height: unset;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
   }
+
   .moment-details {
-    padding: 10px 8px;
-    gap: 4px;
+    padding: 8px 4px 2px 4px;
+    gap: 3px;
   }
+
   .moment-caption {
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.3;
+    line-height: 1.25;
   }
+
   .moment-details p {
-    display: none; /* Hide long secondary description on compact mobile cards to keep cards uniform */
+    display: none; /* Hide secondary description to preserve uniform grid on phones */
   }
+
   .moment-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     padding-top: 6px;
-    font-size: 0.72rem;
+    margin-top: 2px;
+    gap: 4px;
+  }
+
+  .moment-date {
+    font-size: 0.68rem;
+    color: var(--blue-sky);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .moment-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .btn-card-star,
+  .moment-del-btn {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+  }
+
+  .badge-permanent {
+    font-size: 0.68rem;
+    white-space: nowrap;
   }
 
   /* Fullscreen Lightbox Modal */
   .lightbox-modal {
     padding: 10px;
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
+
   .lightbox-container {
     gap: 6px;
+    width: 100%;
   }
+
   .lightbox-media-wrapper {
-    max-height: 50vh;
-    margin-bottom: 10px;
+    max-height: 52vh;
+    margin-bottom: 8px;
   }
+
   .lightbox-media-wrapper img,
   .lightbox-media-wrapper video {
-    max-height: 50vh;
-    border-radius: 10px;
+    max-height: 52vh;
+    border-radius: 12px;
   }
+
   .lightbox-nav-btn {
     position: absolute;
-    top: 38%;
+    top: 40%;
     transform: translateY(-50%);
-    width: 42px;
-    height: 42px;
-    font-size: 1.05rem;
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.1rem;
+    background: rgba(0, 0, 0, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
+
   .lightbox-nav-btn.prev-btn { left: 4px; }
   .lightbox-nav-btn.next-btn { right: 4px; }
+
   .lightbox-close {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-    font-size: 1.7rem;
-    background: rgba(0, 0, 0, 0.7);
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.8rem;
+    background: rgba(0, 0, 0, 0.75);
   }
+
   .lightbox-info h4 {
     font-size: 1.15rem;
   }
+
   .lightbox-caption {
     font-size: 0.82rem;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
+
   .lightbox-actions-row {
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
+
   .btn-lightbox-action, .btn-delete-moment, .badge-permanent-moment {
-    padding: 5px 12px;
-    font-size: 0.75rem;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    min-height: 38px;
   }
 
   /* Love Letter */
@@ -3637,27 +4126,111 @@ body::before {
   }
 }
 
-/* 5. Ultra-Narrow Screens (<= 360px) */
-@media (max-width: 360px) {
-  .section {
-    padding: 30px 10px;
+/* 5. Compact Mobile Screens (<= 480px) */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 10px 14px;
+  }
+  .nav-logo {
+    font-size: 1.15rem;
+  }
+  .nav-pill-text {
+    display: none; /* Keep header buttons compact icons so logo title never wraps */
+  }
+  .nav-music-pill, .nav-lock-pill {
+    padding: 7px 11px;
+    min-height: 38px;
+  }
+  .mobile-bottom-nav {
+    padding: 4px 2px calc(5px + env(safe-area-inset-bottom, 0px)) 2px;
+  }
+  .mobile-nav-link {
+    padding: 5px 2px;
+    font-size: 0.64rem;
+    gap: 2px;
+  }
+  .mobile-nav-link i {
+    font-size: 1.05rem;
   }
   .hero-title {
     font-size: 1.65rem;
+  }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  .toast-item {
+    font-size: 0.84rem;
+    padding: 11px 14px;
+  }
+  .album-hub-actions {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .album-hub-actions .btn-album-camera,
+  .album-hub-actions .btn-album-secondary {
+    padding: 9px 2px;
+    font-size: 0.72rem;
+  }
+}
+
+/* 6. Ultra-Narrow Screens (<= 380px) */
+@media (max-width: 380px) {
+  .section {
+    padding: 28px 10px;
+  }
+  .hero-title {
+    font-size: 1.48rem;
+  }
+  .hero-badge {
+    font-size: 0.7rem;
+    padding: 4px 10px;
   }
   .countdown-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
+  .count-number {
+    font-size: 1.45rem;
+  }
   .journey-stats {
     grid-template-columns: 1fr;
     gap: 6px;
   }
-  .gallery-grid {
+  .album-hub-actions {
     grid-template-columns: 1fr;
   }
+  .album-hub-actions .btn-album-primary {
+    grid-column: 1;
+  }
+  .pin-display-wrapper {
+    gap: 6px;
+    padding: 8px 6px;
+  }
+  .pin-dots-group {
+    gap: 4px;
+  }
+  .pin-dot {
+    width: 13px;
+    height: 13px;
+  }
+  .pin-divider {
+    font-size: 1.1rem;
+    margin-top: 10px;
+  }
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
   .moment-media {
-    height: 175px;
+    min-height: unset;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+  .filter-btn {
+    padding: 6px 12px;
+    font-size: 0.76rem;
   }
 }
 
