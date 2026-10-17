@@ -719,6 +719,116 @@ const ALBUM_DB_VERSION = 2;
 const ALBUM_STORE_NAME = 'album_photos';
 const USER_MOMENTS_STORAGE_KEY = 'anniversary_user_moments_v2';
 
+/* Cloudinary Unsigned Upload Configuration */
+const CLOUDINARY_CONFIG = {
+  cloudName: 'dxjcwv7a',
+  uploadPreset: 'anniv_preset',
+  uploadUrl: 'https://api.cloudinary.com/v1_1/dxjcwv7a/image/upload',
+  autoUploadUrl: 'https://api.cloudinary.com/v1_1/dxjcwv7a/auto/upload',
+  videoUploadUrl: 'https://api.cloudinary.com/v1_1/dxjcwv7a/video/upload'
+};
+
+const CLOUDINARY_MOMENTS_STORAGE_KEY = 'anniversary_cloudinary_moments_v1';
+
+function getStoredCloudinaryMoments() {
+  try {
+    const raw = localStorage.getItem(CLOUDINARY_MOMENTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn('LocalStorage read error for Cloudinary moments:', err);
+  }
+  return [];
+}
+
+function persistCloudinaryMoments(momentsList) {
+  try {
+    localStorage.setItem(CLOUDINARY_MOMENTS_STORAGE_KEY, JSON.stringify(momentsList));
+  } catch (err) {
+    console.warn('LocalStorage save error for Cloudinary moments:', err);
+  }
+}
+
+function saveCloudinaryMoment(momentItem) {
+  const current = getStoredCloudinaryMoments().filter(m => String(m.id) !== String(momentItem.id));
+  current.unshift(momentItem);
+  persistCloudinaryMoments(current);
+}
+
+function removeCloudinaryMoment(id) {
+  const current = getStoredCloudinaryMoments().filter(m => String(m.id) !== String(id));
+  persistCloudinaryMoments(current);
+}
+
+function setCloudinaryProgressUI(show, label = '', percent = 0) {
+  const progressContainer = document.getElementById('cloudinaryUploadProgress');
+  const progressLabel = document.getElementById('cloudinaryProgressLabel');
+  const progressPercent = document.getElementById('cloudinaryProgressPercent');
+  const progressBarFill = document.getElementById('cloudinaryProgressBarFill');
+
+  if (progressContainer) {
+    progressContainer.style.display = show ? 'block' : 'none';
+  }
+  if (progressLabel && label) {
+    progressLabel.innerHTML = label;
+  }
+  if (progressPercent) {
+    progressPercent.textContent = `${percent}%`;
+  }
+  if (progressBarFill) {
+    progressBarFill.style.width = `${percent}%`;
+  }
+}
+
+async function uploadToCloudinary(file, onProgress) {
+  const isVideo = isVideoFile(file);
+  const endpoint = isVideo ? CLOUDINARY_CONFIG.videoUploadUrl : CLOUDINARY_CONFIG.uploadUrl;
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', endpoint, true);
+
+    if (xhr.upload && typeof onProgress === 'function') {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) {
+          resolve(data);
+        } else {
+          const msg = (data.error && data.error.message) ? data.error.message : `HTTP ${xhr.status}`;
+          reject(new Error(msg));
+        }
+      } catch (err) {
+        reject(new Error('Gagal membaca respons dari Cloudinary.'));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Koneksi internet bermasalah saat mengunggah ke Cloudinary. Pastikan koneksi internet aktif.'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Waktu unggah ke Cloudinary habis (timeout).'));
+    };
+
+    xhr.send(formData);
+  });
+}
+
 let albumDBInstance = null;
 
 function initIndexedDB() {
@@ -1315,7 +1425,7 @@ function setupDropZoneAndUpload() {
 
   async function handleImmediateUpload(filesList) {
     const total = filesList.length;
-    showToast(`Memproses ${total} kenangan ke Album Cinta...`, 'info');
+    showToast(`Mengunggah ${total} kenangan ke Cloudinary... ☁️✨`, 'info');
 
     const btnTriggerAlbumUpload = document.getElementById('btnTriggerAlbumUpload');
     const btnTriggerDropzoneUpload = document.getElementById('btnTriggerDropzoneUpload');
@@ -1324,16 +1434,19 @@ function setupDropZoneAndUpload() {
 
     if (btnTriggerAlbumUpload) {
       btnTriggerAlbumUpload.disabled = true;
-      btnTriggerAlbumUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      btnTriggerAlbumUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
     }
     if (btnTriggerDropzoneUpload) {
       btnTriggerDropzoneUpload.disabled = true;
-      btnTriggerDropzoneUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      btnTriggerDropzoneUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
     }
+
+    setCloudinaryProgressUI(true, `Menyiapkan ${total} foto/video untuk Cloudinary...`, 0);
 
     let successCount = 0;
     const todayFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     let lastSavedId = null;
+    let lastErrorMsg = null;
 
     try {
       for (let i = 0; i < total; i++) {
@@ -1342,49 +1455,72 @@ function setupDropZoneAndUpload() {
         const rawTitle = file.name ? file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') : (isVideo ? 'Video Kenangan' : 'Foto Kenangan');
         const cleanTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
 
+        setCloudinaryProgressUI(
+          true,
+          `<i class="fa-solid fa-cloud-arrow-up fa-bounce"></i> Mengunggah (${i + 1}/${total}): <strong>${escapeHtml(file.name || cleanTitle)}</strong>...`,
+          Math.round((i / total) * 100)
+        );
+
         try {
-          if (isVideo) {
-            const videoThumb = await extractVideoThumbnail(file);
-            const momentItem = await saveNewUploadedMoment({
-              file: file,
-              blob: file,
-              dataUrl: '',
-              thumbUrl: videoThumb,
-              type: 'video',
+          const cldRes = await uploadToCloudinary(file, (percent) => {
+            const overallPercent = Math.round(((i + (percent / 100)) / total) * 100);
+            setCloudinaryProgressUI(
+              true,
+              `<i class="fa-solid fa-cloud-arrow-up fa-spin"></i> Mengunggah (${i + 1}/${total}): ${percent}%`,
+              overallPercent
+            );
+          });
+
+          if (cldRes && cldRes.secure_url) {
+            const secureUrl = cldRes.secure_url;
+            let thumbUrl = secureUrl;
+            if (isVideo) {
+              thumbUrl = secureUrl.replace(/\.[^/.]+$/, '.jpg').replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,so_auto/');
+            } else {
+              thumbUrl = secureUrl.replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/');
+            }
+
+            const newId = 'cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            const momentItem = {
+              id: newId,
+              name: file.name || (cleanTitle + (isVideo ? '.mp4' : '.jpg')),
+              type: isVideo ? 'video' : 'image',
+              src: secureUrl,
+              thumb: thumbUrl,
+              thumbUrl: thumbUrl,
               title: cleanTitle,
-              caption: 'Video kenangan manis yang diabadikan bersama.',
+              caption: 'Foto kenangan manis yang tersimpan di Cloudinary.',
               date: todayFormatted,
-              category: 'user'
+              year: 'user',
+              timestamp: Date.now(),
+              isPreset: false,
+              isUserUpload: true,
+              isCloudinary: true,
+              cloudinaryPublicId: cldRes.public_id || ''
+            };
+
+            saveCloudinaryMoment(momentItem);
+            await dbSaveAlbumPhoto(momentItem);
+
+            allMomentsCache = [momentItem, ...allMomentsCache.filter(m => String(m.id) !== String(newId))];
+
+            currentFilter = 'all';
+            const filterBtns = document.querySelectorAll('.gallery-filters .filter-btn:not(.btn-clear-all)');
+            filterBtns.forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.filter === 'all');
             });
-            if (momentItem) {
-              lastSavedId = momentItem.id;
-              successCount++;
-            }
-          } else {
-            const dual = await compressImageDual(file);
-            if (dual) {
-              const momentItem = await saveNewUploadedMoment({
-                file: file,
-                blob: file,
-                dataUrl: dual.highRes,
-                thumbUrl: dual.thumb,
-                type: 'image',
-                title: cleanTitle,
-                caption: 'Foto kenangan manis yang tersimpan di Album Cinta kita.',
-                date: todayFormatted,
-                category: 'user'
-              });
-              if (momentItem) {
-                lastSavedId = momentItem.id;
-                successCount++;
-              }
-            }
+            applyFilterAndRender();
+
+            lastSavedId = newId;
+            successCount++;
           }
-        } catch (err) {
-          console.warn('Upload error for file:', file.name, err);
+        } catch (uploadErr) {
+          console.warn('Cloudinary upload error for file:', file.name, uploadErr);
+          lastErrorMsg = uploadErr.message;
         }
       }
     } finally {
+      setCloudinaryProgressUI(false);
       if (btnTriggerAlbumUpload) {
         btnTriggerAlbumUpload.disabled = false;
         btnTriggerAlbumUpload.innerHTML = origAlbumHtml || '<i class="fa-solid fa-cloud-arrow-up"></i><span>Upload Foto / Video</span>';
@@ -1402,8 +1538,8 @@ function setupDropZoneAndUpload() {
 
       showToast(
         successCount === 1 
-          ? `Momen manis berhasil disimpan ke Album Cinta! ❤️💙` 
-          : `${successCount} foto & video berhasil disimpan ke Album Cinta! ❤️💙`,
+          ? `Foto berhasil diunggah ke Cloudinary & tampil instan di Galeri! ☁️❤️` 
+          : `${successCount} foto berhasil diunggah ke Cloudinary & tampil instan di Galeri! ☁️❤️`,
         'success'
       );
 
@@ -1417,7 +1553,11 @@ function setupDropZoneAndUpload() {
         }
       }, 250);
     } else {
-      showToast('Gagal memproses file. Silakan coba kembali.', 'error');
+      showToast(
+        lastErrorMsg ? `Gagal upload ke Cloudinary: ${lastErrorMsg}` : 'Gagal mengunggah ke Cloudinary. Silakan periksa koneksi dan coba lagi.',
+        'error',
+        6000
+      );
     }
   }
 
@@ -1453,7 +1593,7 @@ function setupDropZoneAndUpload() {
     btnConfirmUpload.addEventListener('click', async () => {
       if ((!currentPreviewDataUrl && !currentPreviewBlob) || pendingFilesQueue.length === 0) return;
 
-      const file = pendingFilesQueue[currentPreviewIndex];
+      const file = pendingFilesQueue[currentPreviewIndex] || currentPreviewBlob;
       const title = previewTitleInput ? previewTitleInput.value.trim() : '';
       const caption = previewCaptionInput ? previewCaptionInput.value.trim() : '';
       const rawDate = previewDateInput ? previewDateInput.value : '';
@@ -1471,45 +1611,89 @@ function setupDropZoneAndUpload() {
       }
 
       btnConfirmUpload.disabled = true;
-      btnConfirmUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      btnConfirmUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah ke Cloudinary...';
+      setCloudinaryProgressUI(true, 'Mengunggah ke Cloudinary...', 15);
 
-      let finalThumb = currentPreviewThumbUrl || currentPreviewDataUrl;
-      let finalBlob = currentPreviewBlob || (file instanceof Blob ? file : null);
+      try {
+        let secureUrl = '';
+        let thumbUrl = '';
+        let publicId = '';
 
-      if (currentPreviewFileType === 'video' && (!finalThumb || finalThumb.length > 500000) && finalBlob) {
-        finalThumb = await extractVideoThumbnail(finalBlob);
-      }
+        if (file instanceof Blob || file instanceof File) {
+          const cldRes = await uploadToCloudinary(file, (percent) => {
+            setCloudinaryProgressUI(true, `Mengunggah ke Cloudinary: ${percent}%`, percent);
+          });
+          if (cldRes && cldRes.secure_url) {
+            secureUrl = cldRes.secure_url;
+            publicId = cldRes.public_id || '';
+            if (currentPreviewFileType === 'video') {
+              thumbUrl = secureUrl.replace(/\.[^/.]+$/, '.jpg').replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,so_auto/');
+            } else {
+              thumbUrl = secureUrl.replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/');
+            }
+          }
+        }
 
-      const momentItem = await saveNewUploadedMoment({
-        file: file,
-        blob: finalBlob,
-        dataUrl: currentPreviewDataUrl || '',
-        thumbUrl: finalThumb,
-        type: currentPreviewFileType,
-        title: title || (file ? file.name.replace(/\.[^/.]+$/, "") : 'Momen Baru'),
-        caption: caption || 'Momen manis yang diabadikan bersama.',
-        date: formattedDate,
-        category: category
-      });
+        if (!secureUrl) {
+          secureUrl = currentPreviewDataUrl || (currentPreviewBlob ? URL.createObjectURL(currentPreviewBlob) : '');
+          thumbUrl = currentPreviewThumbUrl || secureUrl;
+        }
 
-      if (window.triggerParticleBurst) {
-        window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
-      }
+        const newId = 'cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const momentItem = {
+          id: newId,
+          name: file && file.name ? file.name : (title + (currentPreviewFileType === 'video' ? '.mp4' : '.jpg')),
+          type: currentPreviewFileType,
+          src: secureUrl,
+          thumb: thumbUrl || secureUrl,
+          thumbUrl: thumbUrl || secureUrl,
+          title: title || (file && file.name ? file.name.replace(/\.[^/.]+$/, "") : 'Momen Baru'),
+          caption: caption || 'Foto kenangan manis yang diabadikan bersama.',
+          date: formattedDate,
+          year: category,
+          timestamp: Date.now(),
+          isPreset: false,
+          isUserUpload: true,
+          isCloudinary: !!publicId,
+          cloudinaryPublicId: publicId
+        };
 
-      showToast(`Momen "${escapeHtml(title || 'Baru')}" berhasil disimpan ke Album Cinta! ❤️💙`, 'success');
+        if (publicId) {
+          saveCloudinaryMoment(momentItem);
+        }
+        await dbSaveAlbumPhoto(momentItem);
 
-      setTimeout(() => {
-        btnConfirmUpload.disabled = false;
-        btnConfirmUpload.innerHTML = '<i class="fa-solid fa-heart-circle-plus"></i> Simpan ke Galeri Cinta';
+        allMomentsCache = [momentItem, ...allMomentsCache.filter(m => String(m.id) !== String(newId))];
+        currentFilter = 'all';
+        const filterBtns = document.querySelectorAll('.gallery-filters .filter-btn:not(.btn-clear-all)');
+        filterBtns.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.filter === 'all');
+        });
+        applyFilterAndRender();
+
+        if (window.triggerParticleBurst) {
+          window.triggerParticleBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+        }
+
+        showToast(`Momen "${escapeHtml(momentItem.title)}" berhasil disimpan ke Album Cinta! ☁️❤️`, 'success');
+
         closePreview();
-        if (momentItem) {
-          const card = document.querySelector(`.moment-card[data-id="${momentItem.id}"]`);
+
+        setTimeout(() => {
+          const card = document.querySelector(`.moment-card[data-id="${newId}"]`);
           if (card) {
             card.classList.add('new-moment-highlight');
             card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
-        }
-      }, 300);
+        }, 250);
+      } catch (err) {
+        console.warn('Confirm upload error:', err);
+        showToast(`Gagal mengunggah: ${err.message}`, 'error', 6000);
+      } finally {
+        setCloudinaryProgressUI(false);
+        btnConfirmUpload.disabled = false;
+        btnConfirmUpload.innerHTML = '<i class="fa-solid fa-heart-circle-plus"></i> Simpan ke Galeri Cinta';
+      }
     });
   }
 }
@@ -1990,7 +2174,7 @@ const ASET_FOTO_ITEMS = [
     src: 'AsetFoto/IMG_1082.JPG',
     thumb: 'AsetFoto/thumbs/IMG_1082.JPG',
     title: 'Sore yang Hangat',
-    caption: 'Menikmati langit senja bersama wanita yang paling kucintai.',
+    caption: 'Menikmati langit senja bersama Syifanaa yang paling kucintai.',
     date: '24 Mei 2025',
     year: '2025',
     timestamp: new Date('2025-05-24T17:34:47').getTime(),
@@ -2055,7 +2239,7 @@ const ASET_FOTO_ITEMS = [
     src: 'AsetFoto/IMG_2904.JPG',
     thumb: 'AsetFoto/thumbs/IMG_2904.JPG',
     title: 'Cahaya Malam Romantis',
-    caption: 'Malam syahdu bertabur cahaya bersama wanita impian hatiku.',
+    caption: 'Malam syahdu bertabur cahaya bersama Syifanaa impian hatiku.',
     date: '18 Oktober 2025',
     year: '2025',
     timestamp: new Date('2025-10-18T19:22:36').getTime(),
@@ -2399,8 +2583,22 @@ function initGalleryHighlights() {
 /* Gallery Moments Loader & Renderer */
 async function loadGalleryMoments() {
   try {
-    const userPhotos = await dbGetAllAlbumPhotos();
-    const formattedUserPhotos = (userPhotos || []).map(u => {
+    // 1. Get stored Cloudinary moments from localStorage (per requirement #5)
+    const storedCloudinary = getStoredCloudinaryMoments();
+
+    // 2. Get local IndexedDB photos
+    let userPhotos = [];
+    try {
+      userPhotos = await dbGetAllAlbumPhotos();
+    } catch (e) {
+      console.warn('IndexedDB read fallback:', e);
+      userPhotos = getStoredUserMoments();
+    }
+
+    const combinedMap = new Map();
+
+    // Insert IndexedDB photos
+    (userPhotos || []).forEach(u => {
       let src = u.src || u.dataUrl || '';
       if (u.blob instanceof Blob) {
         src = URL.createObjectURL(u.blob);
@@ -2409,7 +2607,7 @@ async function loadGalleryMoments() {
       if (!thumb && u.type === 'video') {
         thumb = createVideoPlaceholder(u.title || u.name || 'Video Kita');
       }
-      return {
+      const item = {
         id: u.id,
         src: src || thumb,
         blob: u.blob || null,
@@ -2422,19 +2620,42 @@ async function loadGalleryMoments() {
         timestamp: u.timestamp || Date.now(),
         type: u.type || 'image',
         isPreset: false,
-        isUserUpload: true
+        isUserUpload: true,
+        isCloudinary: !!u.isCloudinary || (typeof u.src === 'string' && u.src.includes('cloudinary.com'))
       };
+      combinedMap.set(String(item.id), item);
     });
 
-    const map = new Map();
-    formattedUserPhotos.forEach(p => map.set(String(p.id), p));
-    const dedupedUserPhotos = Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    // Layer stored Cloudinary moments from localStorage (ensures URL permanence across reloads)
+    (storedCloudinary || []).forEach(c => {
+      const item = {
+        id: c.id,
+        src: c.src,
+        thumb: c.thumb || c.thumbUrl || c.src,
+        thumbUrl: c.thumbUrl || c.thumb || c.src,
+        title: c.title || 'Foto Kenangan Cloudinary',
+        caption: c.caption || 'Foto kenangan manis yang tersimpan di Cloudinary.',
+        date: c.date || 'Unggahan Baru',
+        year: c.year || 'user',
+        timestamp: c.timestamp || Date.now(),
+        type: c.type || 'image',
+        isPreset: false,
+        isUserUpload: true,
+        isCloudinary: true,
+        cloudinaryPublicId: c.cloudinaryPublicId || ''
+      };
+      combinedMap.set(String(item.id), item);
+    });
 
+    const dedupedUserPhotos = Array.from(combinedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // Combine user Cloudinary & uploaded photos with the 24 preset photos in AsetFoto/
     allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
   } catch (err) {
     console.warn('Error loading gallery moments:', err);
-    allMomentsCache = [...getStoredUserMoments(), ...ASET_FOTO_ITEMS];
+    const storedCloudinary = getStoredCloudinaryMoments();
+    allMomentsCache = [...storedCloudinary, ...getStoredUserMoments(), ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
   }
 }
@@ -2495,15 +2716,16 @@ function renderGalleryGrid(moments) {
         </div>`
       : `<img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
 
-    const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isVideo ? 'Video Kita' : 'Foto Kita');
-    const badgeIcon = isVideo ? 'fa-video' : (item.isPreset ? 'fa-heart' : 'fa-sparkles');
+    const isCloud = !!item.isCloudinary || (typeof item.src === 'string' && item.src.includes('cloudinary.com'));
+    const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isCloud ? (isVideo ? 'Cloud Video' : 'Cloud Foto') : (isVideo ? 'Video Kita' : 'Foto Kita'));
+    const badgeIcon = isVideo ? 'fa-video' : (item.isPreset ? 'fa-heart' : (isCloud ? 'fa-cloud' : 'fa-sparkles'));
     const overlayIcon = isVideo ? 'fa-play' : 'fa-magnifying-glass-plus';
 
     card.innerHTML = `
       <div class="polaroid-tape" aria-hidden="true"></div>
       <div class="moment-media" role="button" tabindex="0" aria-label="Buka ${isVideo ? 'video' : 'foto'} ${escapeHtml(item.title)} di resolusi penuh">
         ${mediaHtml}
-        <span class="media-type-badge ${isVideo ? 'video' : 'photo'} ${!item.isPreset ? 'user-badge' : ''}">
+        <span class="media-type-badge ${isVideo ? 'video' : 'photo'} ${!item.isPreset ? 'user-badge' : ''} ${isCloud ? 'cld-badge' : ''}">
           <i class="fa-solid ${badgeIcon}"></i> ${badgeText}
         </span>
         <div class="moment-overlay" aria-hidden="true">
@@ -2586,6 +2808,10 @@ window.setAsHeroPhoto = function(id) {
 window.deleteMoment = async function(id) {
   if (!confirm('Apakah kamu yakin ingin menghapus foto kenangan ini dari Album?')) return;
 
+  // Remove from Cloudinary localStorage
+  removeCloudinaryMoment(id);
+
+  // Remove from IndexedDB
   await dbDeleteAlbumPhoto(id);
 
   allMomentsCache = allMomentsCache.filter(m => String(m.id) !== String(id));
@@ -2612,6 +2838,7 @@ function setupGalleryFilters() {
       if (!confirm('Hapus seluruh foto & video tambahan yang Anda upload secara mandiri dari browser ini? (24 foto kenangan utama tidak akan terhapus)')) return;
 
       persistUserMoments([]);
+      persistCloudinaryMoments([]);
 
       if (db) {
         try {
@@ -2824,11 +3051,11 @@ function initLetterFeatures() {
   if (typewriterBtn) {
     typewriterBtn.addEventListener('click', () => {
       const textToType = [
-        "Selamat hari jadi yang ke-7 tahun, wanitaku yang paling luar biasa.",
+        "Selamat hari jadi yang ke-7 tahun, sayaangku yang paling luar biasa.",
         "Rasanya baru kemarin kita memulai kisah ini, namun setiap detik bersamamu selalu terasa begitu istimewa dan penuh makna.",
         "Tujuh tahun bukan sekadar angka. Di dalamnya ada ribuan perjalanan, jutaan tawa, canda, dan saling menguatkan di saat lelah. Kamu adalah rumah terbaik tempat hatiku selalu ingin pulang.",
         "Warna merah hari ini adalah janji cintaku yang akan selalu membara untukmu, dan warna biru adalah kedamaian serta keceriaan yang selalu kamu berikan dalam setiap hariku.",
-        "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya. ❤️💙"
+        "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat, Sayaangku. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️💙"
       ];
 
       letterBody.innerHTML = '';
@@ -2947,7 +3174,7 @@ function initWishesFeature() {
             {
               id: 'sample_firhan_' + Date.now(),
               author: 'Firhan',
-              text: 'Terima kasih sudah menjadi wanita terhebat dan terindah selama 7 tahun ini. Aku berjanji akan selalu ada di sampingmu di setiap langkah perjalanan kita menuju selamanya ❤️',
+              text: 'Terima kasih Syifanaa sudah menjadi sosok terhebat dan terindah selama 7 tahun ini. Aku berjanji akan selalu ada di sampingmu di setiap langkah perjalanan kita menuju selamanya ❤️',
               time: '16 Des 2026, 00:00',
               likes: 7
             },
