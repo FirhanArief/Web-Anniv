@@ -4747,3 +4747,39 @@ body::before {
     flex: 1;
   }
 }
+
+/* ==========================================================
+   ANTI-SLOP ACCESSIBILITY & MOTION PREFERENCES (R-31, R-34)
+   ========================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .vinyl-record.spinning {
+    animation: none !important;
+  }
+
+  #particleCanvas {
+    display: none !important;
+  }
+
+  .floating-music-btn.active .music-wave-bars span {
+    animation: none !important;
+  }
+}
+
+/* Tactile micro-interaction feedback for real human touch */
+button:active:not(:disabled),
+.filter-btn:active,
+.mobile-nav-link:active,
+.btn-album-action:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease;
+}
+
