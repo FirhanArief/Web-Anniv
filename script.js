@@ -1935,11 +1935,11 @@ const ASET_FOTO_ITEMS = [
   {
     id: 'preset_1',
     filename: 'IMG_0421.JPG',
-    src: 'AsetFoto/IMG_0421.JPG',
-    thumb: 'AsetFoto/thumbs/IMG_0421.JPG',
+    src: 'AsetFoto/IMG_0421.JPG?v=2',
+    thumb: 'AsetFoto/thumbs/IMG_0421.JPG?v=2',
     title: 'Momen Manis Bersamamu',
     caption: 'Awal musim semi penuh senyum dan kehangatan langkah kita.',
-    date: '29 Maret 2025',
+    date: 'Sorotan Spesial',
     year: '2025',
     timestamp: new Date('2025-03-29T14:52:53').getTime(),
     type: 'image',
@@ -1961,11 +1961,11 @@ const ASET_FOTO_ITEMS = [
   {
     id: 'preset_3',
     filename: 'IMG_0821.JPG',
-    src: 'AsetFoto/IMG_0821.JPG',
-    thumb: 'AsetFoto/thumbs/IMG_0821.JPG',
+    src: 'AsetFoto/IMG_0821.JPG?v=2',
+    thumb: 'AsetFoto/thumbs/IMG_0821.JPG?v=2',
     title: 'Senyuman Terindahmu',
     caption: 'Tatapan dan senyum manis yang selalu menenangkan duniaku.',
-    date: '3 Mei 2025',
+    date: 'Sorotan Spesial',
     year: '2025',
     timestamp: new Date('2025-05-03T15:26:10').getTime(),
     type: 'image',
@@ -2026,11 +2026,11 @@ const ASET_FOTO_ITEMS = [
   {
     id: 'preset_8',
     filename: 'IMG_2112.JPG',
-    src: 'AsetFoto/IMG_2112.JPG',
-    thumb: 'AsetFoto/thumbs/IMG_2112.JPG',
+    src: 'AsetFoto/IMG_2112.JPG?v=2',
+    thumb: 'AsetFoto/thumbs/IMG_2112.JPG?v=2',
     title: 'Perjalanan Berharga',
     caption: 'Setiap kilometer terasa begitu istimewa saat ada kamu di sisiku.',
-    date: '4 Agustus 2025',
+    date: 'Sorotan Spesial',
     year: '2025',
     timestamp: new Date('2025-08-04T15:45:09').getTime(),
     type: 'image',
@@ -2238,7 +2238,7 @@ const ASET_FOTO_ITEMS = [
     thumb: 'AsetFoto/thumbs/IMG_6825.JPG',
     title: 'Menuju 7 Tahun Cinta Kita',
     caption: 'Tujuh tahun yang penuh arti dan cinta ini akan kujaga hingga selamanya.',
-    date: '9 Oktober 2026',
+    date: 'Sorotan Spesial',
     year: '2026',
     timestamp: new Date('2026-10-09T23:07:49').getTime(),
     type: 'image',
@@ -2297,8 +2297,13 @@ function initHeroPhotoShowcase() {
       imgEl.src = item.thumb;
       imgEl.onerror = () => { imgEl.src = item.src; };
       imgEl.alt = item.title;
+      imgEl.setAttribute('data-id', item.id);
+      imgEl.style.objectPosition = item.id === 'preset_1' ? 'center 55%' : (item.id === 'preset_8' ? 'center 35%' : '');
       if (titleEl) titleEl.textContent = `${item.title} ❤️`;
-      if (dateEl) dateEl.innerHTML = `<i class="fa-regular fa-calendar"></i> ${item.date}`;
+      if (dateEl) {
+        dateEl.innerHTML = '';
+        dateEl.style.display = 'none';
+      }
       imgEl.style.opacity = '1';
     }, 150);
 
@@ -2372,7 +2377,6 @@ function initGalleryHighlights() {
       <div class="highlight-overlay">
         <span class="hl-tag">${m.tag}</span>
         <h4 class="hl-title">${m.title}</h4>
-        <span class="hl-date"><i class="fa-regular fa-calendar"></i> ${m.item.date}</span>
       </div>
     `;
 
@@ -2510,7 +2514,7 @@ function renderGalleryGrid(moments) {
         <h3 class="moment-caption">${escapeHtml(item.title)}</h3>
         <p class="moment-desc">${escapeHtml(item.caption)}</p>
         <div class="moment-footer">
-          <span class="moment-date"><i class="fa-regular fa-calendar-check"></i> ${item.date}</span>
+          <span class="moment-date">${item.date === 'Sorotan Spesial' ? '<i class=\"fa-solid fa-sparkles text-blue\"></i> Sorotan Spesial' : '<i class=\"fa-regular fa-calendar-check\"></i> ' + item.date}</span>
           <div class="moment-card-actions">
             <button type="button" class="btn-card-star" onclick="setAsHeroPhoto('${item.id}')" title="Jadikan Sorotan Utama di Beranda" aria-label="Jadikan sorotan utama">
               <i class="fa-regular fa-star"></i>
@@ -2560,7 +2564,10 @@ window.setAsHeroPhoto = function(id) {
     heroImg.alt = item.title;
   }
   if (heroTitle) heroTitle.textContent = `${item.title} ❤️`;
-  if (heroDate) heroDate.innerHTML = `<i class="fa-regular fa-calendar"></i> ${item.date}`;
+  if (heroDate) {
+    heroDate.innerHTML = '';
+    heroDate.style.display = 'none';
+  }
 
   if (heroPolaroid) {
     heroPolaroid.classList.remove('switched');
@@ -2765,7 +2772,11 @@ function renderLightboxCurrent() {
   }
 
   if (titleEl) titleEl.textContent = item.title;
-  if (dateEl) dateEl.innerHTML = `<i class="fa-regular fa-calendar"></i> ${item.date}`;
+  if (dateEl) {
+    dateEl.innerHTML = item.date === 'Sorotan Spesial'
+      ? `<i class="fa-solid fa-sparkles text-blue"></i> Sorotan Spesial`
+      : `<i class="fa-regular fa-calendar"></i> ${item.date}`;
+  }
   if (captionEl) captionEl.textContent = item.caption;
   if (counterEl) counterEl.textContent = `${activeMomentIndex + 1} / ${currentVisibleMoments.length}`;
 
