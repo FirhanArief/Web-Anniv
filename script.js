@@ -1410,7 +1410,7 @@ function setupDropZoneAndUpload() {
           : document.getElementById('galleryGrid');
         if (targetCard) {
           targetCard.classList.add('new-moment-highlight');
-          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 250);
     } else {
@@ -1503,7 +1503,7 @@ function setupDropZoneAndUpload() {
           const card = document.querySelector(`.moment-card[data-id="${momentItem.id}"]`);
           if (card) {
             card.classList.add('new-moment-highlight');
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }
       }, 300);
@@ -2517,7 +2517,7 @@ function renderGalleryGrid(moments) {
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             ` : `
-              <span class="badge-permanent"><i class="fa-solid fa-heart"></i> Kenangan</span>
+              <span class="badge-permanent" title="Kenangan Abadi"><i class="fa-solid fa-heart"></i> <span class="badge-text">Kenangan</span></span>
             `}
           </div>
         </div>
