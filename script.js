@@ -782,13 +782,20 @@ function setCloudinaryProgressUI(show, label = '', percent = 0) {
   }
 }
 
-async function uploadToCloudinary(file, onProgress) {
+async function uploadToCloudinary(file, onProgress, extraData = {}) {
   const isVideo = isVideoFile(file);
   const endpoint = isVideo ? CLOUDINARY_CONFIG.videoUploadUrl : CLOUDINARY_CONFIG.uploadUrl;
 
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+  formData.append('tags', 'anniv_gallery');
+
+  if (extraData && extraData.title) {
+    const safeCaption = (extraData.caption || 'Foto kenangan manis').replace(/[\r\n|]/g, ' ').slice(0, 200);
+    const safeTitle = (extraData.title || 'Foto Kenangan').replace(/[\r\n|]/g, ' ').slice(0, 100);
+    formData.append('context', `caption=${encodeURIComponent(safeCaption)}|alt=${encodeURIComponent(safeTitle)}`);
+  }
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -827,6 +834,65 @@ async function uploadToCloudinary(file, onProgress) {
 
     xhr.send(formData);
   });
+}
+
+async function fetchCloudinaryRemoteGallery() {
+  try {
+    const res = await fetch(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/list/anniv_gallery.json?_t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.resources)) {
+        return data.resources.map(item => {
+          const versionStr = item.version ? `v${item.version}/` : '';
+          const formatStr = item.format || 'jpg';
+          const fullSrc = `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${versionStr}${item.public_id}.${formatStr}`;
+          const thumbSrc = `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/${versionStr}${item.public_id}.${formatStr}`;
+
+          let title = 'Foto Kenangan';
+          let caption = 'Foto kenangan manis yang tersimpan di Cloudinary.';
+          if (item.context && item.context.custom) {
+            if (item.context.custom.alt) {
+              try { title = decodeURIComponent(item.context.custom.alt); } catch (e) { title = item.context.custom.alt; }
+            }
+            if (item.context.custom.caption) {
+              try { caption = decodeURIComponent(item.context.custom.caption); } catch (e) { caption = item.context.custom.caption; }
+            }
+          }
+
+          let formattedDate = 'Unggahan Cloud';
+          if (item.created_at) {
+            try {
+              const d = new Date(item.created_at);
+              formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            } catch (e) {}
+          }
+
+          return {
+            id: 'cld_' + item.public_id.replace(/[^a-zA-Z0-9]/g, '_'),
+            name: `${title}.${formatStr}`,
+            type: 'image',
+            src: fullSrc,
+            thumb: thumbSrc,
+            thumbUrl: thumbSrc,
+            title: title,
+            caption: caption,
+            date: formattedDate,
+            year: 'user',
+            timestamp: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
+            isPreset: false,
+            isUserUpload: true,
+            isCloudinary: true,
+            cloudinaryPublicId: item.public_id
+          };
+        });
+      }
+    } else if (res.status === 401) {
+      console.info('Cloudinary Resource list is restricted. Buka Cloudinary Settings > Security > matikan centang Resource list untuk sinkron otomatis ke semua HP.');
+    }
+  } catch (err) {
+    console.warn('Cloudinary remote gallery fetch:', err);
+  }
+  return null;
 }
 
 let albumDBInstance = null;
@@ -1469,7 +1535,7 @@ function setupDropZoneAndUpload() {
               `<i class="fa-solid fa-cloud-arrow-up fa-spin"></i> Mengunggah (${i + 1}/${total}): ${percent}%`,
               overallPercent
             );
-          });
+          }, { title: cleanTitle, caption: 'Foto kenangan manis yang tersimpan di Cloudinary.' });
 
           if (cldRes && cldRes.secure_url) {
             const secureUrl = cldRes.secure_url;
@@ -1622,7 +1688,7 @@ function setupDropZoneAndUpload() {
         if (file instanceof Blob || file instanceof File) {
           const cldRes = await uploadToCloudinary(file, (percent) => {
             setCloudinaryProgressUI(true, `Mengunggah ke Cloudinary: ${percent}%`, percent);
-          });
+          }, { title: title || 'Momen Baru', caption: caption || 'Momen manis yang diabadikan bersama.' });
           if (cldRes && cldRes.secure_url) {
             secureUrl = cldRes.secure_url;
             publicId = cldRes.public_id || '';
@@ -1752,28 +1818,35 @@ async function saveNewUploadedMoment({ file, blob, dataUrl, thumbUrl, type, titl
 }
 
 function exportAlbumBackup() {
+  const cldMoments = getStoredCloudinaryMoments();
   dbGetAllAlbumPhotos().then(photos => {
     const userPhotos = photos.filter(p => !p.isPreset);
-    if (userPhotos.length === 0) {
+    const map = new Map();
+    userPhotos.forEach(p => map.set(String(p.id), p));
+    cldMoments.forEach(c => map.set(String(c.id), c));
+    const allUserList = Array.from(map.values());
+
+    if (allUserList.length === 0) {
       showToast('Belum ada foto yang diunggah untuk dicadangkan.', 'info');
       return;
     }
     const backupData = {
       app: 'Happy-7th-Anniversary-Album',
       exportDate: new Date().toISOString(),
-      photos: userPhotos.map(p => ({
+      photos: allUserList.map(p => ({
         id: p.id,
         name: p.name,
-        type: p.type,
+        type: p.type || 'image',
         thumb: p.thumb || p.thumbUrl || '',
-        src: (p.src && !p.src.startsWith('blob:') && p.src.length < 500000) ? p.src : '',
-        title: p.title,
-        caption: p.caption,
-        date: p.date,
-        year: p.year,
-        timestamp: p.timestamp,
+        src: p.src || '',
+        title: p.title || 'Foto Kenangan',
+        caption: p.caption || '',
+        date: p.date || 'Hari Ini',
+        year: p.year || 'user',
+        timestamp: p.timestamp || Date.now(),
         isPreset: false,
-        isUserUpload: true
+        isUserUpload: true,
+        isCloudinary: !!p.isCloudinary || (typeof p.src === 'string' && p.src.includes('cloudinary.com'))
       }))
     };
     const jsonStr = JSON.stringify(backupData, null, 2);
@@ -1786,7 +1859,7 @@ function exportAlbumBackup() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast(`Berhasil mendownload cadangan ${userPhotos.length} foto album! 💾`, 'success');
+    showToast(`Berhasil mendownload cadangan ${allUserList.length} foto album! 💾`, 'success');
   });
 }
 
@@ -1802,6 +1875,9 @@ function importAlbumBackup(file) {
       let imported = 0;
       for (const p of data.photos) {
         if (p.thumb || p.src) {
+          if (p.isCloudinary || (typeof p.src === 'string' && p.src.includes('cloudinary.com'))) {
+            saveCloudinaryMoment(p);
+          }
           await dbSaveAlbumPhoto(p);
           imported++;
         }
@@ -2652,6 +2728,25 @@ async function loadGalleryMoments() {
     // Combine user Cloudinary & uploaded photos with the 24 preset photos in AsetFoto/
     allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
+
+    // Background auto-sync from Cloudinary remote tag list (for cross-device synchronization)
+    fetchCloudinaryRemoteGallery().then(remotePhotos => {
+      if (remotePhotos && remotePhotos.length > 0) {
+        let hasNew = false;
+        remotePhotos.forEach(rp => {
+          if (!combinedMap.has(String(rp.id))) {
+            combinedMap.set(String(rp.id), rp);
+            saveCloudinaryMoment(rp);
+            hasNew = true;
+          }
+        });
+        if (hasNew) {
+          const updatedUserPhotos = Array.from(combinedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          allMomentsCache = [...updatedUserPhotos, ...ASET_FOTO_ITEMS];
+          applyFilterAndRender();
+        }
+      }
+    });
   } catch (err) {
     console.warn('Error loading gallery moments:', err);
     const storedCloudinary = getStoredCloudinaryMoments();
