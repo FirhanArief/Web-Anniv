@@ -189,9 +189,10 @@ function initSurpriseGate() {
   let enteredPin = '';
   let isChecking = false;
 
-  // Auto-unlock if previously opened in this browser
+  // Auto-lock on browser/tab close: use sessionStorage so closing the web re-locks it
   try {
-    if (localStorage.getItem('anniversary_gate_unlocked') === 'true') {
+    localStorage.removeItem('anniversary_gate_unlocked'); // Clean up any old permanent unlock
+    if (sessionStorage.getItem('anniversary_session_unlocked') === 'true') {
       if (gate) gate.classList.add('open');
       if (mainContent) mainContent.classList.remove('hidden');
     }
@@ -252,7 +253,8 @@ function initSurpriseGate() {
     if (enteredPin === TARGET_PIN) {
       // SUCCESS: PIN Correct!
       try {
-        localStorage.setItem('anniversary_gate_unlocked', 'true');
+        sessionStorage.setItem('anniversary_session_unlocked', 'true');
+        localStorage.removeItem('anniversary_gate_unlocked');
       } catch (e) {}
       if (displayWrapper) {
         displayWrapper.classList.remove('error');
@@ -368,6 +370,7 @@ function initSurpriseGate() {
   if (relockBtn) {
     relockBtn.addEventListener('click', () => {
       try {
+        sessionStorage.removeItem('anniversary_session_unlocked');
         localStorage.removeItem('anniversary_gate_unlocked');
       } catch (e) {}
       if (gate) {
