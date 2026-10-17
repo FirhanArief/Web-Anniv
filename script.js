@@ -729,13 +729,57 @@ const CLOUDINARY_CONFIG = {
 };
 
 const CLOUDINARY_MOMENTS_STORAGE_KEY = 'anniversary_cloudinary_moments_v1';
+const CLOUDINARY_DELETED_KEY = 'anniversary_deleted_cld_ids_v1';
+
+function getDeletedCloudinaryIds() {
+  try {
+    const raw = localStorage.getItem(CLOUDINARY_DELETED_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function markCloudinaryMomentDeleted(id) {
+  try {
+    const list = getDeletedCloudinaryIds();
+    const strId = String(id);
+    if (!list.includes(strId)) list.push(strId);
+    const cleanPublicId = strId.replace(/^cld_/, '');
+    if (!list.includes(cleanPublicId)) list.push(cleanPublicId);
+    localStorage.setItem(CLOUDINARY_DELETED_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function isDummyOrInvalidMedia(item) {
+  if (!item) return true;
+  const src = item.src || item.thumb || item.dataUrl || '';
+  if (!src || typeof src !== 'string') return true;
+  const clean = src.trim();
+  if (!clean || clean === 'undefined' || clean === 'null') return true;
+  if (clean.startsWith('data:image/gif;base64,R0lGODlhAQAB')) return true;
+  if (clean.includes('fcgec44k1fqakjbjfw4g') || clean.includes('ofjdk5cfzxcivh5xzz1u') || clean.includes('k2qsf1sdkvnmeyjbxqdz')) return true;
+  const deletedIds = getDeletedCloudinaryIds();
+  if (deletedIds.includes(String(item.id))) return true;
+  if (item.cloudinaryPublicId && deletedIds.includes(item.cloudinaryPublicId)) return true;
+  return false;
+}
 
 function getStoredCloudinaryMoments() {
   try {
     const raw = localStorage.getItem(CLOUDINARY_MOMENTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        // Filter out dummy/empty/invalid test moments
+        const valid = parsed.filter(m => !isDummyOrInvalidMedia(m));
+        if (valid.length !== parsed.length) {
+          localStorage.setItem(CLOUDINARY_MOMENTS_STORAGE_KEY, JSON.stringify(valid));
+        }
+        return valid;
+      }
     }
   } catch (err) {
     console.warn('LocalStorage read error for Cloudinary moments:', err);
@@ -745,19 +789,22 @@ function getStoredCloudinaryMoments() {
 
 function persistCloudinaryMoments(momentsList) {
   try {
-    localStorage.setItem(CLOUDINARY_MOMENTS_STORAGE_KEY, JSON.stringify(momentsList));
+    const cleanList = (momentsList || []).filter(m => !isDummyOrInvalidMedia(m));
+    localStorage.setItem(CLOUDINARY_MOMENTS_STORAGE_KEY, JSON.stringify(cleanList));
   } catch (err) {
     console.warn('LocalStorage save error for Cloudinary moments:', err);
   }
 }
 
 function saveCloudinaryMoment(momentItem) {
+  if (isDummyOrInvalidMedia(momentItem)) return;
   const current = getStoredCloudinaryMoments().filter(m => String(m.id) !== String(momentItem.id));
   current.unshift(momentItem);
   persistCloudinaryMoments(current);
 }
 
 function removeCloudinaryMoment(id) {
+  markCloudinaryMomentDeleted(id);
   const current = getStoredCloudinaryMoments().filter(m => String(m.id) !== String(id));
   persistCloudinaryMoments(current);
 }
@@ -789,7 +836,8 @@ async function uploadToCloudinary(file, onProgress, extraData = {}) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-  formData.append('tags', 'anniv_gallery');
+  // Auto-sync tag across all devices
+  formData.append('tags', 'anniversary_album');
 
   if (extraData && extraData.title) {
     const safeCaption = (extraData.caption || 'Foto kenangan manis').replace(/[\r\n|]/g, ' ').slice(0, 200);
@@ -836,63 +884,80 @@ async function uploadToCloudinary(file, onProgress, extraData = {}) {
   });
 }
 
+/* Auto-sync from Cloudinary Resource List (anniversary_album tag) */
 async function fetchCloudinaryRemoteGallery() {
-  try {
-    const res = await fetch(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/list/anniv_gallery.json?_t=${Date.now()}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.resources)) {
-        return data.resources.map(item => {
-          const versionStr = item.version ? `v${item.version}/` : '';
-          const formatStr = item.format || 'jpg';
-          const fullSrc = `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${versionStr}${item.public_id}.${formatStr}`;
-          const thumbSrc = `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/${versionStr}${item.public_id}.${formatStr}`;
+  const cloudNames = [CLOUDINARY_CONFIG.cloudName, 'dxjcwvv7a'];
+  const deletedIds = getDeletedCloudinaryIds();
 
-          let title = 'Foto Kenangan';
-          let caption = 'Foto kenangan manis yang tersimpan di Cloudinary.';
-          if (item.context && item.context.custom) {
-            if (item.context.custom.alt) {
-              try { title = decodeURIComponent(item.context.custom.alt); } catch (e) { title = item.context.custom.alt; }
-            }
-            if (item.context.custom.caption) {
-              try { caption = decodeURIComponent(item.context.custom.caption); } catch (e) { caption = item.context.custom.caption; }
-            }
-          }
+  for (const cname of cloudNames) {
+    try {
+      const url = `https://res.cloudinary.com/${cname}/image/list/anniversary_album.json?_t=${Date.now()}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.resources)) {
+          const photos = data.resources
+            .filter(photo => {
+              if (!photo || !photo.public_id || !photo.format) return false;
+              // Filter out 1x1 dummy gifs
+              if (photo.width && photo.height && (photo.width <= 10 || photo.height <= 10)) return false;
+              if (['fcgec44k1fqakjbjfw4g', 'ofjdk5cfzxcivh5xzz1u', 'k2qsf1sdkvnmeyjbxqdz'].includes(photo.public_id)) return false;
+              // Filter out deleted photos
+              if (deletedIds.includes(photo.public_id) || deletedIds.includes('cld_' + photo.public_id.replace(/[^a-zA-Z0-9]/g, '_'))) return false;
+              return true;
+            })
+            .map(photo => {
+              const versionStr = photo.version ? `v${photo.version}/` : '';
+              const formatStr = photo.format || 'jpg';
+              const fullSrc = `https://res.cloudinary.com/${cname}/image/upload/${versionStr}${photo.public_id}.${formatStr}`;
+              const thumbSrc = `https://res.cloudinary.com/${cname}/image/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/${versionStr}${photo.public_id}.${formatStr}`;
 
-          let formattedDate = 'Unggahan Cloud';
-          if (item.created_at) {
-            try {
-              const d = new Date(item.created_at);
-              formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-            } catch (e) {}
-          }
+              let title = 'Foto Kenangan Cinta';
+              let caption = 'Foto kenangan manis yang tersimpan di Cloudinary.';
+              if (photo.context && photo.context.custom) {
+                if (photo.context.custom.alt) {
+                  try { title = decodeURIComponent(photo.context.custom.alt); } catch (e) { title = photo.context.custom.alt; }
+                }
+                if (photo.context.custom.caption) {
+                  try { caption = decodeURIComponent(photo.context.custom.caption); } catch (e) { caption = photo.context.custom.caption; }
+                }
+              }
 
-          return {
-            id: 'cld_' + item.public_id.replace(/[^a-zA-Z0-9]/g, '_'),
-            name: `${title}.${formatStr}`,
-            type: 'image',
-            src: fullSrc,
-            thumb: thumbSrc,
-            thumbUrl: thumbSrc,
-            title: title,
-            caption: caption,
-            date: formattedDate,
-            year: 'user',
-            timestamp: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
-            isPreset: false,
-            isUserUpload: true,
-            isCloudinary: true,
-            cloudinaryPublicId: item.public_id
-          };
-        });
+              let formattedDate = 'Hari Ini';
+              if (photo.created_at) {
+                try {
+                  const d = new Date(photo.created_at);
+                  formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                } catch (e) {}
+              }
+
+              return {
+                id: 'cld_' + photo.public_id.replace(/[^a-zA-Z0-9]/g, '_'),
+                name: `${photo.public_id}.${formatStr}`,
+                type: (formatStr === 'mp4' || formatStr === 'webm' || formatStr === 'mov') ? 'video' : 'image',
+                src: fullSrc,
+                thumb: thumbSrc,
+                thumbUrl: thumbSrc,
+                title: title,
+                caption: caption,
+                date: formattedDate,
+                year: 'user',
+                timestamp: photo.created_at ? new Date(photo.created_at).getTime() : Date.now(),
+                isPreset: false,
+                isUserUpload: true,
+                isCloudinary: true,
+                cloudinaryPublicId: photo.public_id
+              };
+            });
+
+          return photos;
+        }
       }
-    } else if (res.status === 401) {
-      console.info('Cloudinary Resource list is restricted. Buka Cloudinary Settings > Security > matikan centang Resource list untuk sinkron otomatis ke semua HP.');
+    } catch (err) {
+      console.warn(`Fetch error for cloud name ${cname}:`, err);
     }
-  } catch (err) {
-    console.warn('Cloudinary remote gallery fetch:', err);
   }
-  return null;
+  return [];
 }
 
 let albumDBInstance = null;
@@ -2659,7 +2724,7 @@ function initGalleryHighlights() {
 /* Gallery Moments Loader & Renderer */
 async function loadGalleryMoments() {
   try {
-    // 1. Get stored Cloudinary moments from localStorage (per requirement #5)
+    // 1. Get stored Cloudinary moments from localStorage (cleans dummy/deleted items automatically)
     const storedCloudinary = getStoredCloudinaryMoments();
 
     // 2. Get local IndexedDB photos
@@ -2673,8 +2738,9 @@ async function loadGalleryMoments() {
 
     const combinedMap = new Map();
 
-    // Insert IndexedDB photos
+    // Insert IndexedDB photos (skipping invalid/dummy items)
     (userPhotos || []).forEach(u => {
+      if (isDummyOrInvalidMedia(u)) return;
       let src = u.src || u.dataUrl || '';
       if (u.blob instanceof Blob) {
         src = URL.createObjectURL(u.blob);
@@ -2697,19 +2763,21 @@ async function loadGalleryMoments() {
         type: u.type || 'image',
         isPreset: false,
         isUserUpload: true,
-        isCloudinary: !!u.isCloudinary || (typeof u.src === 'string' && u.src.includes('cloudinary.com'))
+        isCloudinary: !!u.isCloudinary || (typeof u.src === 'string' && u.src.includes('cloudinary.com')),
+        cloudinaryPublicId: u.cloudinaryPublicId || ''
       };
       combinedMap.set(String(item.id), item);
     });
 
-    // Layer stored Cloudinary moments from localStorage (ensures URL permanence across reloads)
+    // Layer stored Cloudinary moments from localStorage
     (storedCloudinary || []).forEach(c => {
+      if (isDummyOrInvalidMedia(c)) return;
       const item = {
         id: c.id,
         src: c.src,
         thumb: c.thumb || c.thumbUrl || c.src,
         thumbUrl: c.thumbUrl || c.thumb || c.src,
-        title: c.title || 'Foto Kenangan Cloudinary',
+        title: c.title || 'Foto Kenangan Cinta',
         caption: c.caption || 'Foto kenangan manis yang tersimpan di Cloudinary.',
         date: c.date || 'Unggahan Baru',
         year: c.year || 'user',
@@ -2729,12 +2797,13 @@ async function loadGalleryMoments() {
     allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
 
-    // Background auto-sync from Cloudinary remote tag list (for cross-device synchronization)
+    // 3. Live Auto-Sync from Cloudinary Resource List (anniversary_album tag)
+    // Ensures any device opening the page immediately pulls all photos uploaded from other devices!
     fetchCloudinaryRemoteGallery().then(remotePhotos => {
       if (remotePhotos && remotePhotos.length > 0) {
         let hasNew = false;
         remotePhotos.forEach(rp => {
-          if (!combinedMap.has(String(rp.id))) {
+          if (!isDummyOrInvalidMedia(rp) && !combinedMap.has(String(rp.id))) {
             combinedMap.set(String(rp.id), rp);
             saveCloudinaryMoment(rp);
             hasNew = true;
@@ -2756,8 +2825,8 @@ async function loadGalleryMoments() {
 }
 
 function applyFilterAndRender() {
-  const userCount = allMomentsCache.filter(item => !item.isPreset).length;
-  const totalCount = allMomentsCache.length;
+  const userCount = allMomentsCache.filter(item => !item.isPreset && !isDummyOrInvalidMedia(item)).length;
+  const totalCount = allMomentsCache.filter(item => !isDummyOrInvalidMedia(item)).length;
 
   const countAllEl = document.getElementById('filterCountAll');
   if (countAllEl) countAllEl.textContent = totalCount;
@@ -2771,6 +2840,7 @@ function applyFilterAndRender() {
   }
 
   currentVisibleMoments = allMomentsCache.filter(item => {
+    if (isDummyOrInvalidMedia(item)) return false;
     if (currentFilter === 'all') return true;
     if (currentFilter === '2025') return item.year === '2025';
     if (currentFilter === '2026') return item.year === '2026';
@@ -2786,7 +2856,16 @@ function renderGalleryGrid(moments) {
   if (!grid) return;
   grid.innerHTML = '';
 
-  if (moments.length === 0) {
+  // Filter out any dummy / invalid item without a valid media source
+  const validMoments = (moments || []).filter(item => {
+    if (!item) return false;
+    if (isDummyOrInvalidMedia(item)) return false;
+    const src = item.src || item.thumb;
+    if (!src || typeof src !== 'string' || src.trim() === '') return false;
+    return true;
+  });
+
+  if (validMoments.length === 0) {
     grid.innerHTML = `
       <div class="gallery-empty" style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #94a3b8;">
         <i class="fa-solid fa-camera-retro" style="font-size: 3rem; color: #e63946; margin-bottom: 15px;" aria-hidden="true"></i>
@@ -2797,7 +2876,7 @@ function renderGalleryGrid(moments) {
     return;
   }
 
-  moments.forEach(item => {
+  validMoments.forEach(item => {
     const card = document.createElement('div');
     card.className = `moment-card ${!item.isPreset ? 'user-uploaded' : ''}`;
     card.dataset.id = item.id;
@@ -2806,10 +2885,10 @@ function renderGalleryGrid(moments) {
     const isVideo = item.type === 'video';
     const mediaHtml = isVideo
       ? `<div class="moment-media-video-wrap">
-          <img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src || ''}'">
+          <img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">
           <span class="video-play-indicator" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
         </div>`
-      : `<img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='${item.src}'">`;
+      : `<img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">`;
 
     const isCloud = !!item.isCloudinary || (typeof item.src === 'string' && item.src.includes('cloudinary.com'));
     const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isCloud ? (isVideo ? 'Cloud Video' : 'Cloud Foto') : (isVideo ? 'Video Kita' : 'Foto Kita'));
@@ -2903,16 +2982,36 @@ window.setAsHeroPhoto = function(id) {
 window.deleteMoment = async function(id) {
   if (!confirm('Apakah kamu yakin ingin menghapus foto kenangan ini dari Album?')) return;
 
-  // Remove from Cloudinary localStorage
+  // 1. Remove element immediately from DOM with smooth transition
+  const card = document.querySelector(`.moment-card[data-id="${id}"]`);
+  if (card) {
+    card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.85)';
+    setTimeout(() => card.remove(), 250);
+  }
+
+  // 2. Blacklist so it will never be pulled again by Cloudinary fetch
+  markCloudinaryMomentDeleted(id);
+
+  // 3. Remove from Cloudinary localStorage
   removeCloudinaryMoment(id);
 
-  // Remove from IndexedDB
+  // 4. Remove from IndexedDB
   await dbDeleteAlbumPhoto(id);
 
+  // 5. Update state arrays
   allMomentsCache = allMomentsCache.filter(m => String(m.id) !== String(id));
+  currentVisibleMoments = currentVisibleMoments.filter(m => String(m.id) !== String(id));
 
-  closeLightbox();
-  applyFilterAndRender();
+  if (activeMomentId !== null && String(activeMomentId) === String(id)) {
+    closeLightbox();
+  }
+
+  setTimeout(() => {
+    applyFilterAndRender();
+  }, 260);
+
   showToast('Foto kenangan berhasil dihapus dari album.', 'info');
 };
 
