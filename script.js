@@ -3233,8 +3233,6 @@ function renderGalleryGrid(moments) {
         </div>
       </div>
       <div class="moment-details">
-        <h3 class="moment-caption">${escapeHtml(item.title)}</h3>
-        <p class="moment-desc">${escapeHtml(item.caption)}</p>
         <div class="moment-footer">
           <span class="moment-date">${item.date === 'Sorotan Spesial' ? '<i class=\"fa-solid fa-sparkles text-blue\"></i> Sorotan Spesial' : '<i class=\"fa-regular fa-calendar-check\"></i> ' + item.date}</span>
           <div class="moment-card-actions">
