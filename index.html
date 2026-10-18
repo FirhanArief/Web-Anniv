@@ -38,9 +38,9 @@
         </div>
       </div>
 
-      <h2 class="gate-title" id="pinGateTitle">Kunci Cinta 7 Tahun Kita ❤️💙</h2>
+      <h2 class="gate-title" id="pinGateTitle">Seven Years of Us</h2>
       <p class="gate-subtitle" id="pinGateSubtitle">
-        Masukkan 8 digit PIN tanggal jadian kita untuk membuka perayaan manis ini:
+        Masukkan 8 digit PIN tanggal jadian kita untuk membuka perayaan manis ini
       </p>
 
       <!-- 8-Digit PIN Display: DD / MM / YYYY -->
@@ -115,12 +115,18 @@
 
   <!-- ================= MAIN WEB CONTENT ================= -->
   <main id="mainContent" class="main-content hidden">
+    <!-- Dynamic Parallax Photobooth Background -->
+    <div class="photobooth-parallax-viewport" id="photoboothParallaxViewport" aria-hidden="true">
+      <div class="photobooth-parallax-strip" id="photoboothParallaxStrip">
+        <div class="photobooth-vignette-overlay"></div>
+      </div>
+    </div>
+
     <!-- Navigation Header -->
     <header class="navbar" role="banner">
       <div class="nav-logo">
         <span class="heart-red">❤️</span>
         <span class="logo-text">Our 7 Years Journey</span>
-        <span class="heart-blue">💙</span>
       </div>
       <nav class="nav-links" aria-label="Navigasi Utama">
         <a href="#countdown"><i class="fa-solid fa-clock"></i> Countdown</a>
@@ -143,41 +149,49 @@
       </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="hero-badge">
-        <span class="badge-dot red"></span> Cinta
-        <span class="badge-divider">•</span>
-        <span class="badge-dot blue"></span> Keceriaan
-        <span class="badge-divider">•</span>
-        16 Desember 2026
-      </div>
-
-      <h1 class="hero-title">
-        Happy 7th Anniversary, <br>
-        <span class="gradient-text">SYIFANAA!</span>
-      </h1>
-      
-      <p class="hero-description">
-        Tujuh tahun yang penuh tawa, pelukan hangat, dan ribuan kenangan manis. 
-        Warna <strong class="text-red">Merah</strong> melambangkan cinta mendalamku yang tak pernah pudar, 
-        dan warna <strong class="text-blue">Biru</strong> melambangkan keceriaan serta ketenangan yang selalu kamu bawa dalam hidupku.
-      </p>
-
-      <!-- Symbolism Pills -->
-      <div class="meaning-pills">
-        <div class="pill pill-red">
-          <div class="pill-icon"><i class="fa-solid fa-heart"></i></div>
-          <div class="pill-text">
-            <strong>Merah Cintaku</strong>
-            <small>Ketulusan & kehangatan cinta tanpa batas</small>
-          </div>
+    <!-- Hero Section / Welcome Greeting -->
+    <section class="hero-section" id="heroGreeting">
+      <div class="welcome-greeting-card">
+        <!-- Sub-heading / Badge -->
+        <div class="hero-badge-clean">
+          <span class="badge-dot-white"></span>
+          <span>Celebrating 7 Years of Togetherness</span>
         </div>
-        <div class="pill pill-blue">
-          <div class="pill-icon"><i class="fa-solid fa-heart"></i></div>
-          <div class="pill-text">
-            <strong>Biru Keceriaan</strong>
-            <small>Senyuman & kebahagiaan di setiap hari kita</small>
+
+        <!-- Main Headline -->
+        <h1 class="hero-welcome-title">
+          Untuk Syifana, <br class="title-break">
+          <span>Rumah Tempatku Pulang.</span>
+        </h1>
+        
+        <!-- Welcome Paragraph -->
+        <p class="hero-welcome-desc">
+          Tujuh tahun bukan sekadar tentang rentang waktu yang kita lewati, tapi tentang setiap tawa kecil, genggaman tangan yang tak pernah lepas, dan bagaimana kamu selalu jadi alasan terbaikku untuk bersyukur setiap hari. Terima kasih sudah tumbuh bersama sejauh ini, Sayaaang.
+        </p>
+
+        <!-- Two Highlight Cards -->
+        <div class="meaning-pills welcome-highlight-grid">
+          <div class="pill pill-luxury pill-love">
+            <div class="pill-icon pill-icon-love"><i class="fa-solid fa-heart" aria-hidden="true"></i></div>
+            <div class="pill-text">
+              <strong>Ketulusan Cinta</strong>
+              <small>Kehangatan & ketulusan tanpa batas</small>
+            </div>
+          </div>
+          <div class="pill pill-luxury pill-joy">
+            <div class="pill-icon pill-icon-joy">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" aria-hidden="true">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                <path d="M5 3v4"/>
+                <path d="M19 17v4"/>
+                <path d="M3 5h4"/>
+                <path d="M17 19h4"/>
+              </svg>
+            </div>
+            <div class="pill-text">
+              <strong>Keceriaan Bersama</strong>
+              <small>Senyuman & kebahagiaan di setiap hari kita</small>
+            </div>
           </div>
         </div>
       </div>
@@ -361,12 +375,12 @@
               Kamu adalah rumah terbaik tempat hatiku selalu ingin pulang.
             </p>
             <p>
-              Warna <strong>merah</strong> hari ini adalah janji cintaku yang akan selalu membara untukmu, 
-              dan warna <strong>biru</strong> adalah kedamaian serta keceriaan yang selalu kamu berikan dalam setiap hariku.
+              Setiap langkah bersamamu adalah janji cintaku yang akan selalu membara untukmu, 
+              serta kedamaian dan kebahagiaan yang selalu kamu berikan dalam setiap hariku.
             </p>
             <p>
               Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat, Sayaangku. 
-              Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️💙
+              Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️
             </p>
           </div>
 
@@ -424,12 +438,12 @@
           </div>
         </div>
 
-        <div class="reason-card" data-step="3" tabindex="0" role="button" aria-expanded="false" aria-label="Tahun 3: Keceriaanmu (Biru). Tekan Enter untuk membaca pesan.">
+        <div class="reason-card" data-step="3" tabindex="0" role="button" aria-expanded="false" aria-label="Tahun 3: Keceriaanmu. Tekan Enter untuk membaca pesan.">
           <div class="card-inner">
             <div class="card-front">
               <span class="reason-year">Tahun 3</span>
               <i class="fa-solid fa-face-laugh-beam"></i>
-              <h3>Keceriaanmu (Biru)</h3>
+              <h3>Keceriaanmu</h3>
               <p>Sentuh untuk membaca</p>
             </div>
             <div class="card-back">
@@ -1124,7 +1138,7 @@
           </div>
           <div class="moment-details">
             <div class="moment-caption" style="font-weight: 600; font-size: 1.05rem; color: #fff;">Hari Penuh Keceriaan</div>
-            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Keceriaan biru yang selalu menyegarkan jiwa di setiap langkah.</p>
+            <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.4; margin: 2px 0 6px 0;">Keceriaan manis yang selalu menyegarkan jiwa di setiap langkah.</p>
             <div class="moment-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
               <span style="font-size: 0.78rem; color: var(--blue-sky);"><i class="fa-regular fa-calendar"></i> 6 Juni 2026</span>
               <span style="font-size: 0.72rem; color: #ff758f; display: inline-flex; align-items: center; gap: 4px;">
@@ -1222,14 +1236,10 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-      <div class="footer-hearts">
-        <span class="pulse-red">❤️</span>
-        <span class="glow-star">✨</span>
-        <span class="pulse-blue">💙</span>
-      </div>
-      <p class="footer-text">Dibuat dengan segenap cinta & kasih sayang untuk Syifanaa tercinta</p>
-      <p class="footer-date">7 Tahun Penuh Cerita • Menuju 16 Desember 2026 & Selamanya</p>
+    <footer class="footer" role="contentinfo">
+      <div class="footer-divider" aria-hidden="true"></div>
+      <p class="footer-quote">Seven Years Down, Forever to Go.</p>
+      <p class="footer-subtext">December 16, 2019 — Hari ini, esok, dan seterusnya untuk Syifana.</p>
     </footer>
 
     <!-- Mobile Bottom Navigation Bar (Handphone Experience) -->

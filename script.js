@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initClickSparkles();
   initGlobalKeyboardShortcuts();
   initScrollSpyAndNav();
+  initPhotoboothParallax();
 });
 
 /* 1. Background Particle Canvas (Romantic Hearts & Joyful Bubbles) */
@@ -195,6 +196,7 @@ function initSurpriseGate() {
     if (sessionStorage.getItem('anniversary_session_unlocked') === 'true') {
       if (gate) gate.classList.add('open');
       if (mainContent) mainContent.classList.remove('hidden');
+      if (window.updatePhotoboothParallax) setTimeout(window.updatePhotoboothParallax, 50);
     }
   } catch (e) {}
 
@@ -313,6 +315,7 @@ function initSurpriseGate() {
         if (gate) gate.classList.add('open');
         if (mainContent) mainContent.classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.updatePhotoboothParallax) window.updatePhotoboothParallax();
         isChecking = false;
       }, 950);
     } else {
@@ -2778,7 +2781,7 @@ const ASET_FOTO_ITEMS = [
     src: 'AsetFoto/IMG_5641.JPG',
     thumb: 'AsetFoto/thumbs/IMG_5641.JPG',
     title: 'Hari Penuh Keceriaan',
-    caption: 'Keceriaan biru yang selalu menyegarkan jiwa di setiap langkah.',
+    caption: 'Keceriaan manis yang selalu menyegarkan jiwa di setiap langkah.',
     date: '6 Juni 2026',
     year: '2026',
     timestamp: new Date('2026-06-06T13:50:55').getTime(),
@@ -3608,8 +3611,8 @@ function initLetterFeatures() {
         "Selamat hari jadi yang ke-7 tahun, sayaangku yang paling luar biasa.",
         "Rasanya baru kemarin kita memulai kisah ini, namun setiap detik bersamamu selalu terasa begitu istimewa dan penuh makna.",
         "Tujuh tahun bukan sekadar angka. Di dalamnya ada ribuan perjalanan, jutaan tawa, canda, dan saling menguatkan di saat lelah. Kamu adalah rumah terbaik tempat hatiku selalu ingin pulang.",
-        "Warna merah hari ini adalah janji cintaku yang akan selalu membara untukmu, dan warna biru adalah kedamaian serta keceriaan yang selalu kamu berikan dalam setiap hariku.",
-        "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat, Sayaangku. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️💙"
+        "Setiap langkah bersamamu adalah janji cintaku yang akan selalu membara untukmu, serta kedamaian dan kebahagiaan yang selalu kamu berikan dalam setiap hariku.",
+        "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat, Sayaangku. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️"
       ];
 
       letterBody.innerHTML = '';
@@ -3965,4 +3968,62 @@ function initScrollSpyAndNav() {
 
   window.addEventListener('scroll', handleScrollSpy, { passive: true });
   handleScrollSpy();
+}
+
+/* 12. Smooth Parallax Scrolling for Photobooth Background Strip */
+function initPhotoboothParallax() {
+  const strip = document.getElementById('photoboothParallaxStrip');
+  if (!strip) return;
+
+  let ticking = false;
+
+  function updateParallax() {
+    // Respect user's motion preferences
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      strip.style.transform = 'translateX(-50%) translateY(0)';
+      ticking = false;
+      return;
+    }
+
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    const docHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.body.clientHeight,
+      document.documentElement.clientHeight
+    );
+    const winHeight = window.innerHeight || 800;
+    const maxScroll = Math.max(docHeight - winHeight, 1);
+    const progress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
+
+    const stripHeight = strip.offsetHeight || (winHeight * 1.75);
+    const maxTravel = Math.max(stripHeight - winHeight, 0);
+
+    const translateY = -progress * maxTravel;
+
+    strip.style.transform = `translateX(-50%) translateY(${translateY.toFixed(1)}px)`;
+    ticking = false;
+  }
+
+  window.updatePhotoboothParallax = updateParallax;
+
+  function onScroll() {
+    if (!ticking) {
+      window.requestAnimationFrame(updateParallax);
+      ticking = true;
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(updateParallax);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // Initial update
+  updateParallax();
 }
