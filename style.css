@@ -102,7 +102,7 @@ body::before {
 }
 
 /* ==========================================================
-   FIXED BACKGROUND WRAPPER (SMOOTH & STATIC MOBILE/DESKTOP RENDER)
+   FIXED BACKGROUND WRAPPER (RESPONSIVE PHOTOBOOTH BACKGROUND)
    ========================================================== */
 .fixed-bg-wrapper,
 .photobooth-parallax-viewport {
@@ -115,8 +115,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
+  background-color: #0D0D0D;
 }
 
+/* 1. Base / Mobile (Layar Kecil): Full Cover & Centered Top */
 .fixed-bg-image,
 .photobooth-parallax-strip {
   position: fixed;
@@ -126,9 +128,10 @@ body::before {
   height: 100vh;
   height: 100dvh;
   z-index: -1;
+  background-color: #0D0D0D;
   background-image: url('assets/main-background.jpg');
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-repeat: no-repeat;
   will-change: transform;
   transform: translateZ(0) !important;
@@ -136,6 +139,18 @@ body::before {
   box-shadow: none;
 }
 
+/* 2. Desktop / Layar Lebar (min-width: 768px ke atas): Pilar Vertikal Utuh (Contain) */
+@media (min-width: 768px) {
+  .fixed-bg-image,
+  .photobooth-parallax-strip {
+    background-size: contain;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-color: #0D0D0D;
+  }
+}
+
+/* 3. Lapisan Overlay Gelap: Menjaga Keterbacaan Teks & Surat Cinta */
 .fixed-bg-overlay,
 .photobooth-vignette-overlay {
   position: fixed;
@@ -149,24 +164,6 @@ body::before {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   pointer-events: none;
-}
-
-@media (max-width: 768px) {
-  .fixed-bg-wrapper,
-  .photobooth-parallax-viewport,
-  .fixed-bg-image,
-  .photobooth-parallax-strip,
-  .fixed-bg-overlay,
-  .photobooth-vignette-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    border-radius: 0;
-    box-shadow: none;
-  }
 }
 
 /* Custom Scrollbar */

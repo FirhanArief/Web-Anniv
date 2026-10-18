@@ -2908,7 +2908,7 @@ function initGalleryHighlights() {
   if (!container) return;
 
   const milestones = [
-    { id: 'preset_1', tag: 'Awal Kenangan', title: 'Momen Pertama Kita', item: ASET_FOTO_ITEMS[0] },
+    { id: 'preset_1', tag: '', title: 'Kenangan Tak Terlupakan', item: ASET_FOTO_ITEMS[0] },
     { id: 'preset_8', tag: 'Petualangan', title: 'Perjalanan Berdua', item: ASET_FOTO_ITEMS[7] },
     { id: 'preset_16', tag: 'Tahun 2026', title: 'Awal Tahun Bersama', item: ASET_FOTO_ITEMS[15] },
     { id: 'preset_24', tag: '7 Tahun Cinta', title: 'Menuju 16 Des 2026', item: ASET_FOTO_ITEMS[23] }
@@ -2945,7 +2945,7 @@ function initGalleryHighlights() {
     card.innerHTML = `
       <img src="${m.item.thumb}" alt="${escapeHtml(m.title)}" loading="lazy" onerror="this.src='${m.item.src}'">
       <div class="highlight-overlay">
-        <span class="hl-tag">${m.tag}</span>
+        ${m.tag ? `<span class="hl-tag">${m.tag}</span>` : ''}
         <h4 class="hl-title">${m.title}</h4>
       </div>
     `;
@@ -3608,11 +3608,10 @@ function initLetterFeatures() {
   if (typewriterBtn) {
     typewriterBtn.addEventListener('click', () => {
       const textToType = [
-        "Selamat hari jadi yang ke-7 tahun, sayaangku yang paling luar biasa.",
-        "Rasanya baru kemarin kita memulai kisah ini, namun setiap detik bersamamu selalu terasa begitu istimewa dan penuh makna.",
-        "Tujuh tahun bukan sekadar angka. Di dalamnya ada ribuan perjalanan, jutaan tawa, canda, dan saling menguatkan di saat lelah. Kamu adalah rumah terbaik tempat hatiku selalu ingin pulang.",
-        "Setiap langkah bersamamu adalah janji cintaku yang akan selalu membara untukmu, serta kedamaian dan kebahagiaan yang selalu kamu berikan dalam setiap hariku.",
-        "Terima kasih telah memilihku, bertahan bersamaku, dan mencintaiku tanpa syarat, Sayaangku. Aku mencintaimu hari ini, esok, di 16 Desember 2026, hingga selamanya, Syifanaa! ❤️"
+        "Hai, Sayaaang. Tujuh tahun ya kita sama-sama. Kalau dipikir-pikir, waktu rasanya berjalan cepat banget, tapi kalau diingat-ingat lagi, udah banyak banget momen dan cerita yang kita lewati berdua sejak 16 Desember 2019.",
+        "Aku cuma mau bilang terima kasih. Terima kasih udah selalu sabar, udah mau dengerin hal-hal random yang aku ceritain, dan yang paling penting, terima kasih udah selalu jadi tempat paling nyaman buat aku pulang pas lagi capek-capeknya. Tumbuh dan belajar bareng kamu adalah bagian terbaik dalam hidupku.",
+        "Kita sama-sama tahu perjalanan tujuh tahun ini nggak selalu mulus. Tapi satu hal yang pasti: aku nggak pernah menyesal memilih kamu. Semua ketawa kita, jalan-jalan kita, sampai ngambek-ngambek kecilnya, itu semua yang bikin hubungan ini hidup dan berharga.",
+        "Happy 7th Anniversary, Syifana. Terima kasih udah bertahan dan berjuang bareng aku sejauh ini. Mari terus gandengan tangan dan bikin lebih banyak memori lagi, hari ini, besok, dan selamanya."
       ];
 
       letterBody.innerHTML = '';
