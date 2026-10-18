@@ -102,72 +102,68 @@ body::before {
 }
 
 /* ==========================================================
-   PHOTOBOOTH PARALLAX BACKGROUND (UNLOCKED STATE)
+   FIXED BACKGROUND WRAPPER (SMOOTH & STATIC MOBILE/DESKTOP RENDER)
    ========================================================== */
+.fixed-bg-wrapper,
 .photobooth-parallax-viewport {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: -1;
   pointer-events: none;
-  z-index: 0;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  background-color: #0c0c0e;
 }
 
+.fixed-bg-image,
 .photobooth-parallax-strip {
-  position: absolute;
+  position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  width: min(900px, 92vw);
-  height: clamp(1450px, 180vh, 2300px);
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: -1;
   background-image: url('assets/main-background.jpg');
   background-size: cover;
-  background-position: center top;
+  background-position: center;
   background-repeat: no-repeat;
   will-change: transform;
-  border-radius: 24px;
-  box-shadow: 0 0 70px 25px rgba(0, 0, 0, 0.85);
-  overflow: hidden;
+  transform: translateZ(0) !important;
+  border-radius: 0;
+  box-shadow: none;
 }
 
+.fixed-bg-overlay,
 .photobooth-vignette-overlay {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: -1;
+  background-color: rgba(0, 0, 0, 0.60);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   pointer-events: none;
-  background: 
-    /* Vertical vignette: darker at top (navbar) and bottom (footer), crystal clear in pose areas */
-    linear-gradient(180deg, 
-      rgba(10, 10, 12, 0.72) 0%, 
-      rgba(10, 10, 12, 0.32) 12%, 
-      rgba(10, 10, 12, 0.18) 32%, 
-      rgba(10, 10, 12, 0.18) 68%, 
-      rgba(10, 10, 12, 0.42) 88%, 
-      rgba(10, 10, 12, 0.88) 100%
-    ),
-    /* Horizontal vignette: soft transition from strip to dark background on wide screens */
-    linear-gradient(90deg, 
-      rgba(10, 10, 12, 0.94) 0%, 
-      rgba(10, 10, 12, 0.35) 6%, 
-      transparent 14%, 
-      transparent 86%, 
-      rgba(10, 10, 12, 0.35) 94%, 
-      rgba(10, 10, 12, 0.94) 100%
-    ),
-    /* Soft ambient radial vignette */
-    radial-gradient(ellipse at 50% 50%, 
-      transparent 45%, 
-      rgba(10, 10, 12, 0.35) 80%, 
-      rgba(8, 8, 10, 0.75) 100%
-    );
 }
 
 @media (max-width: 768px) {
-  .photobooth-parallax-strip {
+  .fixed-bg-wrapper,
+  .photobooth-parallax-viewport,
+  .fixed-bg-image,
+  .photobooth-parallax-strip,
+  .fixed-bg-overlay,
+  .photobooth-vignette-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
-    height: 180vh;
+    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     box-shadow: none;
   }

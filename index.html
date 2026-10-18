@@ -115,11 +115,10 @@
 
   <!-- ================= MAIN WEB CONTENT ================= -->
   <main id="mainContent" class="main-content hidden">
-    <!-- Dynamic Parallax Photobooth Background -->
-    <div class="photobooth-parallax-viewport" id="photoboothParallaxViewport" aria-hidden="true">
-      <div class="photobooth-parallax-strip" id="photoboothParallaxStrip">
-        <div class="photobooth-vignette-overlay"></div>
-      </div>
+    <!-- Fixed Background Wrapper (Smooth Static Mobile & Desktop Render) -->
+    <div class="fixed-bg-wrapper photobooth-parallax-viewport" id="photoboothParallaxViewport" aria-hidden="true">
+      <div class="fixed-bg-image photobooth-parallax-strip" id="photoboothParallaxStrip"></div>
+      <div class="fixed-bg-overlay photobooth-vignette-overlay"></div>
     </div>
 
     <!-- Navigation Header -->

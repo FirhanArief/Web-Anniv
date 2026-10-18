@@ -3970,60 +3970,18 @@ function initScrollSpyAndNav() {
   handleScrollSpy();
 }
 
-/* 12. Smooth Parallax Scrolling for Photobooth Background Strip */
+/* 12. Fixed Static Background Handler (Smooth 60/120fps Mobile & Desktop Scrolling) */
 function initPhotoboothParallax() {
   const strip = document.getElementById('photoboothParallaxStrip');
   if (!strip) return;
 
-  let ticking = false;
-
   function updateParallax() {
-    // Respect user's motion preferences
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      strip.style.transform = 'translateX(-50%) translateY(0)';
-      ticking = false;
-      return;
+    if (strip) {
+      strip.style.transform = 'translateZ(0)';
     }
-
-    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-    const docHeight = Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.offsetHeight,
-      document.body.clientHeight,
-      document.documentElement.clientHeight
-    );
-    const winHeight = window.innerHeight || 800;
-    const maxScroll = Math.max(docHeight - winHeight, 1);
-    const progress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
-
-    const stripHeight = strip.offsetHeight || (winHeight * 1.75);
-    const maxTravel = Math.max(stripHeight - winHeight, 0);
-
-    const translateY = -progress * maxTravel;
-
-    strip.style.transform = `translateX(-50%) translateY(${translateY.toFixed(1)}px)`;
-    ticking = false;
   }
 
   window.updatePhotoboothParallax = updateParallax;
-
-  function onScroll() {
-    if (!ticking) {
-      window.requestAnimationFrame(updateParallax);
-      ticking = true;
-    }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(updateParallax);
-      ticking = true;
-    }
-  }, { passive: true });
-
-  // Initial update
   updateParallax();
 }
+
