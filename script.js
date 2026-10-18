@@ -730,6 +730,8 @@ const CLOUDINARY_CONFIG = {
 
 const CLOUDINARY_MOMENTS_STORAGE_KEY = 'anniversary_cloudinary_moments_v1';
 const CLOUDINARY_DELETED_KEY = 'anniversary_deleted_cld_ids_v1';
+const CLOUDINARY_SYNCED_TOMBSTONES_KEY = 'anniversary_synced_tombstones_v1';
+const CLOUDINARY_PENDING_DELETIONS_KEY = 'anniversary_pending_deletions_v1';
 
 function getDeletedCloudinaryIds() {
   try {
@@ -742,15 +744,130 @@ function getDeletedCloudinaryIds() {
   return [];
 }
 
+function getSyncedTombstones() {
+  try {
+    const raw = localStorage.getItem(CLOUDINARY_SYNCED_TOMBSTONES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function markTombstoneSynced(id) {
+  try {
+    const list = getSyncedTombstones();
+    const str = String(id).trim();
+    if (str && !list.includes(str)) {
+      list.push(str);
+      localStorage.setItem(CLOUDINARY_SYNCED_TOMBSTONES_KEY, JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
 function markCloudinaryMomentDeleted(id) {
+  if (!id) return;
   try {
     const list = getDeletedCloudinaryIds();
-    const strId = String(id);
-    if (!list.includes(strId)) list.push(strId);
+    const strId = String(id).trim();
     const cleanPublicId = strId.replace(/^cld_/, '');
-    if (!list.includes(cleanPublicId)) list.push(cleanPublicId);
-    localStorage.setItem(CLOUDINARY_DELETED_KEY, JSON.stringify(list));
+    const cldKey = 'cld_' + cleanPublicId.replace(/[^a-zA-Z0-9]/g, '_');
+
+    let updated = false;
+    [strId, cleanPublicId, cldKey].forEach(val => {
+      if (val && !list.includes(val)) {
+        list.push(val);
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      localStorage.setItem(CLOUDINARY_DELETED_KEY, JSON.stringify(list));
+    }
   } catch (e) {}
+}
+
+function getPendingDeletions() {
+  try {
+    const raw = localStorage.getItem(CLOUDINARY_PENDING_DELETIONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function savePendingDeletions(list) {
+  try {
+    localStorage.setItem(CLOUDINARY_PENDING_DELETIONS_KEY, JSON.stringify(list || []));
+  } catch (e) {}
+}
+
+async function broadcastCloudinaryDeletion(publicId, momentId, deleteToken = '') {
+  const cleanId = String(publicId || momentId || '').replace(/^cld_/, '').trim();
+  if (!cleanId) return true;
+
+  markCloudinaryMomentDeleted(cleanId);
+  markCloudinaryMomentDeleted(momentId);
+
+  // If token is available, attempt direct deletion from Cloudinary API
+  if (deleteToken) {
+    try {
+      fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/delete_by_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `token=${encodeURIComponent(deleteToken)}`
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
+  // Check if tombstone has already been broadcasted
+  const synced = getSyncedTombstones();
+  if (synced.includes(cleanId)) {
+    return true;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+    formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+    formData.append('tags', 'anniversary_album');
+    formData.append('context', `is_tombstone=1|deleted_id=${encodeURIComponent(cleanId)}|deleted_at=${Date.now()}`);
+
+    const res = await fetch(CLOUDINARY_CONFIG.uploadUrl, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      markTombstoneSynced(cleanId);
+      const pending = getPendingDeletions().filter(id => id !== cleanId);
+      savePendingDeletions(pending);
+      return true;
+    } else {
+      throw new Error(`Cloudinary marker returned ${res.status}`);
+    }
+  } catch (err) {
+    console.warn('Queueing deletion marker for retry due to network:', err);
+    const pending = getPendingDeletions();
+    if (!pending.includes(cleanId)) {
+      pending.push(cleanId);
+      savePendingDeletions(pending);
+    }
+    return false;
+  }
+}
+
+async function retryPendingDeletions() {
+  const pending = getPendingDeletions();
+  if (!pending || !pending.length) return;
+  for (const id of [...pending]) {
+    try {
+      await broadcastCloudinaryDeletion(id, id);
+    } catch (e) {}
+  }
 }
 
 function isDummyOrInvalidMedia(item) {
@@ -762,8 +879,10 @@ function isDummyOrInvalidMedia(item) {
   if (clean.startsWith('data:image/gif;base64,R0lGODlhAQAB')) return true;
   if (clean.includes('fcgec44k1fqakjbjfw4g') || clean.includes('ofjdk5cfzxcivh5xzz1u') || clean.includes('k2qsf1sdkvnmeyjbxqdz')) return true;
   const deletedIds = getDeletedCloudinaryIds();
-  if (deletedIds.includes(String(item.id))) return true;
-  if (item.cloudinaryPublicId && deletedIds.includes(item.cloudinaryPublicId)) return true;
+  const strId = String(item.id || '');
+  const cleanId = strId.replace(/^cld_/, '');
+  if (deletedIds.includes(strId) || deletedIds.includes(cleanId)) return true;
+  if (item.cloudinaryPublicId && (deletedIds.includes(String(item.cloudinaryPublicId)) || deletedIds.includes('cld_' + String(item.cloudinaryPublicId).replace(/[^a-zA-Z0-9]/g, '_')))) return true;
   return false;
 }
 
@@ -773,7 +892,6 @@ function getStoredCloudinaryMoments() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        // Filter out dummy/empty/invalid test moments
         const valid = parsed.filter(m => !isDummyOrInvalidMedia(m));
         if (valid.length !== parsed.length) {
           localStorage.setItem(CLOUDINARY_MOMENTS_STORAGE_KEY, JSON.stringify(valid));
@@ -804,8 +922,19 @@ function saveCloudinaryMoment(momentItem) {
 }
 
 function removeCloudinaryMoment(id) {
+  if (!id) return;
   markCloudinaryMomentDeleted(id);
-  const current = getStoredCloudinaryMoments().filter(m => String(m.id) !== String(id));
+  const strId = String(id).trim();
+  const cleanId = strId.replace(/^cld_/, '');
+  const cldKey = 'cld_' + cleanId.replace(/[^a-zA-Z0-9]/g, '_');
+
+  const current = getStoredCloudinaryMoments().filter(m => {
+    const mId = String(m.id || '');
+    const mPub = String(m.cloudinaryPublicId || '');
+    if (mId === strId || mId === cleanId || mId === cldKey) return false;
+    if (mPub && (mPub === strId || mPub === cleanId || mPub === cldKey)) return false;
+    return true;
+  });
   persistCloudinaryMoments(current);
 }
 
@@ -886,78 +1015,149 @@ async function uploadToCloudinary(file, onProgress, extraData = {}) {
 
 /* Auto-sync from Cloudinary Resource List (anniversary_album tag) */
 async function fetchCloudinaryRemoteGallery() {
-  const cloudNames = [CLOUDINARY_CONFIG.cloudName, 'dxjcwvv7a'];
+  const cloudNames = [CLOUDINARY_CONFIG.cloudName];
+  const endpoints = ['image', 'video'];
+  const allResources = [];
   const deletedIds = getDeletedCloudinaryIds();
 
   for (const cname of cloudNames) {
-    try {
-      const url = `https://res.cloudinary.com/${cname}/image/list/anniversary_album.json?_t=${Date.now()}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.resources)) {
-          const photos = data.resources
-            .filter(photo => {
-              if (!photo || !photo.public_id || !photo.format) return false;
-              // Filter out 1x1 dummy gifs
-              if (photo.width && photo.height && (photo.width <= 10 || photo.height <= 10)) return false;
-              if (['fcgec44k1fqakjbjfw4g', 'ofjdk5cfzxcivh5xzz1u', 'k2qsf1sdkvnmeyjbxqdz'].includes(photo.public_id)) return false;
-              // Filter out deleted photos
-              if (deletedIds.includes(photo.public_id) || deletedIds.includes('cld_' + photo.public_id.replace(/[^a-zA-Z0-9]/g, '_'))) return false;
-              return true;
-            })
-            .map(photo => {
-              const versionStr = photo.version ? `v${photo.version}/` : '';
-              const formatStr = photo.format || 'jpg';
-              const fullSrc = `https://res.cloudinary.com/${cname}/image/upload/${versionStr}${photo.public_id}.${formatStr}`;
-              const thumbSrc = `https://res.cloudinary.com/${cname}/image/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/${versionStr}${photo.public_id}.${formatStr}`;
-
-              let title = 'Foto Kenangan Cinta';
-              let caption = 'Foto kenangan manis yang tersimpan di Cloudinary.';
-              if (photo.context && photo.context.custom) {
-                if (photo.context.custom.alt) {
-                  try { title = decodeURIComponent(photo.context.custom.alt); } catch (e) { title = photo.context.custom.alt; }
-                }
-                if (photo.context.custom.caption) {
-                  try { caption = decodeURIComponent(photo.context.custom.caption); } catch (e) { caption = photo.context.custom.caption; }
-                }
-              }
-
-              let formattedDate = 'Hari Ini';
-              if (photo.created_at) {
-                try {
-                  const d = new Date(photo.created_at);
-                  formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-                } catch (e) {}
-              }
-
-              return {
-                id: 'cld_' + photo.public_id.replace(/[^a-zA-Z0-9]/g, '_'),
-                name: `${photo.public_id}.${formatStr}`,
-                type: (formatStr === 'mp4' || formatStr === 'webm' || formatStr === 'mov') ? 'video' : 'image',
-                src: fullSrc,
-                thumb: thumbSrc,
-                thumbUrl: thumbSrc,
-                title: title,
-                caption: caption,
-                date: formattedDate,
-                year: 'user',
-                timestamp: photo.created_at ? new Date(photo.created_at).getTime() : Date.now(),
-                isPreset: false,
-                isUserUpload: true,
-                isCloudinary: true,
-                cloudinaryPublicId: photo.public_id
-              };
-            });
-
-          return photos;
+    for (const type of endpoints) {
+      try {
+        const url = `https://res.cloudinary.com/${cname}/${type}/list/anniversary_album.json?_t=${Date.now()}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.resources)) {
+            allResources.push(...data.resources.map(r => ({ ...r, _resourceType: type, _cloudName: cname })));
+          }
         }
+      } catch (err) {
+        // Silently skip if endpoint has no resources or network fails
       }
-    } catch (err) {
-      console.warn(`Fetch error for cloud name ${cname}:`, err);
     }
   }
-  return [];
+
+  // Discover all tombstones from Cloudinary across all devices
+  let newlyDiscoveredCount = 0;
+  for (const res of allResources) {
+    if (!res) continue;
+    let isTombstone = false;
+    let deletedTarget = '';
+
+    if (res.context && res.context.custom) {
+      if (res.context.custom.is_tombstone === '1' || res.context.custom.is_tombstone === 'true') {
+        isTombstone = true;
+      }
+      if (res.context.custom.deleted_id) {
+        deletedTarget = decodeURIComponent(res.context.custom.deleted_id);
+        isTombstone = true;
+      }
+    }
+
+    if (isTombstone && deletedTarget) {
+      const cleanTarget = String(deletedTarget).trim();
+      markTombstoneSynced(cleanTarget);
+      if (!deletedIds.includes(cleanTarget)) {
+        deletedIds.push(cleanTarget);
+        markCloudinaryMomentDeleted(cleanTarget);
+        removeCloudinaryMoment(cleanTarget);
+        dbDeleteAlbumPhoto(cleanTarget);
+        newlyDiscoveredCount++;
+      }
+      const cldKey = 'cld_' + cleanTarget.replace(/[^a-zA-Z0-9]/g, '_');
+      if (!deletedIds.includes(cldKey)) {
+        deletedIds.push(cldKey);
+        markCloudinaryMomentDeleted(cldKey);
+        removeCloudinaryMoment(cldKey);
+        dbDeleteAlbumPhoto(cldKey);
+        newlyDiscoveredCount++;
+      }
+    }
+  }
+
+  // Retry sending any pending deletions
+  retryPendingDeletions().catch(() => {});
+
+  // Sync any local deletions that were made previously but not yet on Cloudinary
+  const localDeletions = getDeletedCloudinaryIds();
+  const syncedTombstones = getSyncedTombstones();
+  for (const localId of localDeletions) {
+    const clean = String(localId).replace(/^cld_/, '').trim();
+    if (clean && !syncedTombstones.includes(clean) && !['fcgec44k1fqakjbjfw4g', 'ofjdk5cfzxcivh5xzz1u', 'k2qsf1sdkvnmeyjbxqdz'].includes(clean)) {
+      broadcastCloudinaryDeletion(clean, clean).catch(() => {});
+    }
+  }
+
+  const validPhotos = allResources
+    .filter(photo => {
+      if (!photo || !photo.public_id || !photo.format) return false;
+      // Filter out tombstones & 1x1 dummy gifs
+      if (photo.context && photo.context.custom && (photo.context.custom.is_tombstone === '1' || photo.context.custom.deleted_id)) return false;
+      if (photo.width && photo.height && (photo.width <= 10 || photo.height <= 10)) return false;
+      if (['fcgec44k1fqakjbjfw4g', 'ofjdk5cfzxcivh5xzz1u', 'k2qsf1sdkvnmeyjbxqdz'].includes(photo.public_id)) return false;
+      // Filter out deleted photos
+      const pubId = String(photo.public_id);
+      const cldKey = 'cld_' + pubId.replace(/[^a-zA-Z0-9]/g, '_');
+      if (deletedIds.includes(pubId) || deletedIds.includes(cldKey)) return false;
+      return true;
+    })
+    .map(photo => {
+      const cname = photo._cloudName || CLOUDINARY_CONFIG.cloudName;
+      const isVideo = photo._resourceType === 'video' || ['mp4', 'webm', 'mov'].includes(photo.format);
+      const versionStr = photo.version ? `v${photo.version}/` : '';
+      const formatStr = photo.format || (isVideo ? 'mp4' : 'jpg');
+      const mediaType = isVideo ? 'video' : 'image';
+      const fullSrc = `https://res.cloudinary.com/${cname}/${mediaType}/upload/${versionStr}${photo.public_id}.${formatStr}`;
+
+      let thumbSrc = fullSrc;
+      if (isVideo) {
+        thumbSrc = `https://res.cloudinary.com/${cname}/video/upload/c_fill,g_auto,w_600,h_800,so_auto/${versionStr}${photo.public_id}.jpg`;
+      } else {
+        thumbSrc = `https://res.cloudinary.com/${cname}/image/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/${versionStr}${photo.public_id}.${formatStr}`;
+      }
+
+      let title = isVideo ? 'Video Kenangan Cinta' : 'Foto Kenangan Cinta';
+      let caption = 'Foto kenangan manis yang tersimpan di Cloudinary.';
+      if (photo.context && photo.context.custom) {
+        if (photo.context.custom.alt) {
+          try { title = decodeURIComponent(photo.context.custom.alt); } catch (e) { title = photo.context.custom.alt; }
+        }
+        if (photo.context.custom.caption) {
+          try { caption = decodeURIComponent(photo.context.custom.caption); } catch (e) { caption = photo.context.custom.caption; }
+        }
+      }
+
+      let formattedDate = 'Hari Ini';
+      if (photo.created_at) {
+        try {
+          const d = new Date(photo.created_at);
+          formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) {}
+      }
+
+      const cleanPublicId = photo.public_id;
+      const standardId = 'cld_' + cleanPublicId.replace(/[^a-zA-Z0-9]/g, '_');
+
+      return {
+        id: standardId,
+        name: `${cleanPublicId}.${formatStr}`,
+        type: isVideo ? 'video' : 'image',
+        src: fullSrc,
+        thumb: thumbSrc,
+        thumbUrl: thumbSrc,
+        title: title,
+        caption: caption,
+        date: formattedDate,
+        year: 'user',
+        timestamp: photo.created_at ? new Date(photo.created_at).getTime() : Date.now(),
+        isPreset: false,
+        isUserUpload: true,
+        isCloudinary: true,
+        cloudinaryPublicId: cleanPublicId
+      };
+    });
+
+  return { photos: validPhotos, deletedCount: newlyDiscoveredCount, deletedIds: Array.from(new Set(deletedIds)) };
 }
 
 let albumDBInstance = null;
@@ -1157,8 +1357,19 @@ function dbSaveAlbumPhoto(photoItem) {
 
 function dbDeleteAlbumPhoto(id) {
   return new Promise((resolve) => {
+    if (!id) return resolve(true);
+    const strId = String(id).trim();
+    const cleanId = strId.replace(/^cld_/, '');
+    const cldKey = 'cld_' + cleanId.replace(/[^a-zA-Z0-9]/g, '_');
+
     try {
-      const local = getStoredUserMoments().filter(m => String(m.id) !== String(id));
+      const local = getStoredUserMoments().filter(m => {
+        const mId = String(m.id || '');
+        const mPub = String(m.cloudinaryPublicId || '');
+        if (mId === strId || mId === cleanId || mId === cldKey) return false;
+        if (mPub && (mPub === strId || mPub === cleanId || mPub === cldKey)) return false;
+        return true;
+      });
       persistUserMoments(local);
     } catch (e) {}
 
@@ -1166,9 +1377,11 @@ function dbDeleteAlbumPhoto(id) {
       try {
         const tx = albumDBInstance.transaction(ALBUM_STORE_NAME, 'readwrite');
         const store = tx.objectStore(ALBUM_STORE_NAME);
-        const req = store.delete(id);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => resolve(false);
+        store.delete(strId);
+        if (cleanId !== strId) store.delete(cleanId);
+        if (cldKey !== strId && cldKey !== cleanId) store.delete(cldKey);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
       } catch (e) {
         resolve(false);
       }
@@ -1611,7 +1824,8 @@ function setupDropZoneAndUpload() {
               thumbUrl = secureUrl.replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,q_auto,f_auto/');
             }
 
-            const newId = 'cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            const cleanPublicId = cldRes.public_id || '';
+            const newId = cleanPublicId ? ('cld_' + cleanPublicId.replace(/[^a-zA-Z0-9]/g, '_')) : ('cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
             const momentItem = {
               id: newId,
               name: file.name || (cleanTitle + (isVideo ? '.mp4' : '.jpg')),
@@ -1627,7 +1841,8 @@ function setupDropZoneAndUpload() {
               isPreset: false,
               isUserUpload: true,
               isCloudinary: true,
-              cloudinaryPublicId: cldRes.public_id || ''
+              cloudinaryPublicId: cleanPublicId,
+              deleteToken: cldRes.delete_token || ''
             };
 
             saveCloudinaryMoment(momentItem);
@@ -1749,6 +1964,7 @@ function setupDropZoneAndUpload() {
         let secureUrl = '';
         let thumbUrl = '';
         let publicId = '';
+        let deleteToken = '';
 
         if (file instanceof Blob || file instanceof File) {
           const cldRes = await uploadToCloudinary(file, (percent) => {
@@ -1757,6 +1973,7 @@ function setupDropZoneAndUpload() {
           if (cldRes && cldRes.secure_url) {
             secureUrl = cldRes.secure_url;
             publicId = cldRes.public_id || '';
+            deleteToken = cldRes.delete_token || '';
             if (currentPreviewFileType === 'video') {
               thumbUrl = secureUrl.replace(/\.[^/.]+$/, '.jpg').replace('/upload/', '/upload/c_fill,g_auto,w_600,h_800,so_auto/');
             } else {
@@ -1770,7 +1987,7 @@ function setupDropZoneAndUpload() {
           thumbUrl = currentPreviewThumbUrl || secureUrl;
         }
 
-        const newId = 'cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const newId = publicId ? ('cld_' + publicId.replace(/[^a-zA-Z0-9]/g, '_')) : ('cld_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
         const momentItem = {
           id: newId,
           name: file && file.name ? file.name : (title + (currentPreviewFileType === 'video' ? '.mp4' : '.jpg')),
@@ -1786,7 +2003,8 @@ function setupDropZoneAndUpload() {
           isPreset: false,
           isUserUpload: true,
           isCloudinary: !!publicId,
-          cloudinaryPublicId: publicId
+          cloudinaryPublicId: publicId,
+          deleteToken: deleteToken
         };
 
         if (publicId) {
@@ -2721,13 +2939,113 @@ function initGalleryHighlights() {
   });
 }
 
+let isSyncingGallery = false;
+
+/* Realtime Gallery Synchronization Across Devices */
+async function syncRemoteGallery(isBackground = false) {
+  if (isSyncingGallery) return;
+  isSyncingGallery = true;
+
+  try {
+    const result = await fetchCloudinaryRemoteGallery();
+    const remotePhotos = (result && result.photos) ? result.photos : [];
+    const deletedIds = getDeletedCloudinaryIds();
+
+    let stateChanged = false;
+
+    // 1. Purge any moments currently in memory or DOM that are deleted
+    const deletedInCache = allMomentsCache.filter(m => {
+      if (m.isPreset) return false;
+      const strId = String(m.id || '');
+      const cleanId = strId.replace(/^cld_/, '');
+      const pubId = String(m.cloudinaryPublicId || '');
+      const cldKey = 'cld_' + (pubId || cleanId).replace(/[^a-zA-Z0-9]/g, '_');
+
+      if (deletedIds.includes(strId) || deletedIds.includes(cleanId) || deletedIds.includes(cldKey)) return true;
+      if (pubId && (deletedIds.includes(pubId) || deletedIds.includes('cld_' + pubId.replace(/[^a-zA-Z0-9]/g, '_')))) return true;
+      return false;
+    });
+
+    if (deletedInCache.length > 0) {
+      deletedInCache.forEach(m => {
+        const card = document.querySelector(`.moment-card[data-id="${m.id}"]`);
+        if (card) {
+          card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.85)';
+          setTimeout(() => card.remove(), 250);
+        }
+        removeCloudinaryMoment(m.id);
+        dbDeleteAlbumPhoto(m.id);
+        if (m.cloudinaryPublicId) {
+          removeCloudinaryMoment(m.cloudinaryPublicId);
+          dbDeleteAlbumPhoto(m.cloudinaryPublicId);
+        }
+        if (activeMomentId !== null && (String(activeMomentId) === String(m.id) || String(activeMomentId) === String(m.cloudinaryPublicId))) {
+          closeLightbox();
+        }
+      });
+
+      const deletedIdSet = new Set(deletedInCache.map(d => String(d.id)));
+      allMomentsCache = allMomentsCache.filter(m => !deletedIdSet.has(String(m.id)));
+      currentVisibleMoments = currentVisibleMoments.filter(m => !deletedIdSet.has(String(m.id)));
+      stateChanged = true;
+    }
+
+    // 2. Add any new remote photos uploaded from other devices
+    remotePhotos.forEach(rp => {
+      if (isDummyOrInvalidMedia(rp)) return;
+      const exists = allMomentsCache.some(m => 
+        String(m.id) === String(rp.id) || 
+        (m.cloudinaryPublicId && rp.cloudinaryPublicId && String(m.cloudinaryPublicId) === String(rp.cloudinaryPublicId))
+      );
+      if (!exists) {
+        saveCloudinaryMoment(rp);
+        allMomentsCache.unshift(rp);
+        stateChanged = true;
+      }
+    });
+
+    if (stateChanged) {
+      const userItems = allMomentsCache.filter(m => !m.isPreset && !isDummyOrInvalidMedia(m)).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      allMomentsCache = [...userItems, ...ASET_FOTO_ITEMS];
+      applyFilterAndRender();
+    }
+  } catch (err) {
+    if (!isBackground) {
+      console.warn('Sync remote gallery error:', err);
+    }
+  } finally {
+    isSyncingGallery = false;
+  }
+}
+
+// Background live sync triggers across devices
+if (!window._gallerySyncListenersAttached) {
+  window._gallerySyncListenersAttached = true;
+  setInterval(() => {
+    syncRemoteGallery(true);
+  }, 12000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncRemoteGallery(true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    syncRemoteGallery(true);
+  });
+
+  window.addEventListener('online', () => {
+    syncRemoteGallery(true);
+  });
+}
+
 /* Gallery Moments Loader & Renderer */
 async function loadGalleryMoments() {
   try {
-    // 1. Get stored Cloudinary moments from localStorage (cleans dummy/deleted items automatically)
     const storedCloudinary = getStoredCloudinaryMoments();
-
-    // 2. Get local IndexedDB photos
     let userPhotos = [];
     try {
       userPhotos = await dbGetAllAlbumPhotos();
@@ -2738,7 +3056,6 @@ async function loadGalleryMoments() {
 
     const combinedMap = new Map();
 
-    // Insert IndexedDB photos (skipping invalid/dummy items)
     (userPhotos || []).forEach(u => {
       if (isDummyOrInvalidMedia(u)) return;
       let src = u.src || u.dataUrl || '';
@@ -2764,12 +3081,12 @@ async function loadGalleryMoments() {
         isPreset: false,
         isUserUpload: true,
         isCloudinary: !!u.isCloudinary || (typeof u.src === 'string' && u.src.includes('cloudinary.com')),
-        cloudinaryPublicId: u.cloudinaryPublicId || ''
+        cloudinaryPublicId: u.cloudinaryPublicId || '',
+        deleteToken: u.deleteToken || ''
       };
       combinedMap.set(String(item.id), item);
     });
 
-    // Layer stored Cloudinary moments from localStorage
     (storedCloudinary || []).forEach(c => {
       if (isDummyOrInvalidMedia(c)) return;
       const item = {
@@ -2786,36 +3103,18 @@ async function loadGalleryMoments() {
         isPreset: false,
         isUserUpload: true,
         isCloudinary: true,
-        cloudinaryPublicId: c.cloudinaryPublicId || ''
+        cloudinaryPublicId: c.cloudinaryPublicId || '',
+        deleteToken: c.deleteToken || ''
       };
       combinedMap.set(String(item.id), item);
     });
 
     const dedupedUserPhotos = Array.from(combinedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-    // Combine user Cloudinary & uploaded photos with the 24 preset photos in AsetFoto/
     allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
 
-    // 3. Live Auto-Sync from Cloudinary Resource List (anniversary_album tag)
-    // Ensures any device opening the page immediately pulls all photos uploaded from other devices!
-    fetchCloudinaryRemoteGallery().then(remotePhotos => {
-      if (remotePhotos && remotePhotos.length > 0) {
-        let hasNew = false;
-        remotePhotos.forEach(rp => {
-          if (!isDummyOrInvalidMedia(rp) && !combinedMap.has(String(rp.id))) {
-            combinedMap.set(String(rp.id), rp);
-            saveCloudinaryMoment(rp);
-            hasNew = true;
-          }
-        });
-        if (hasNew) {
-          const updatedUserPhotos = Array.from(combinedMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-          allMomentsCache = [...updatedUserPhotos, ...ASET_FOTO_ITEMS];
-          applyFilterAndRender();
-        }
-      }
-    });
+    // Trigger full live sync with Cloudinary (tombstones & remote uploads)
+    syncRemoteGallery();
   } catch (err) {
     console.warn('Error loading gallery moments:', err);
     const storedCloudinary = getStoredCloudinaryMoments();
@@ -2980,7 +3279,12 @@ window.setAsHeroPhoto = function(id) {
 };
 
 window.deleteMoment = async function(id) {
-  if (!confirm('Apakah kamu yakin ingin menghapus foto kenangan ini dari Album?')) return;
+  if (!confirm('Apakah kamu yakin ingin menghapus foto kenangan ini dari Album? Foto juga akan terhapus otomatis di semua perangkat lain.')) return;
+
+  const targetItem = allMomentsCache.find(m => String(m.id) === String(id)) || null;
+  const cleanPublicId = targetItem?.cloudinaryPublicId || (String(id).startsWith('cld_') ? String(id).replace(/^cld_/, '') : String(id));
+  const deleteToken = targetItem?.deleteToken || '';
+  const cldKey = 'cld_' + cleanPublicId.replace(/[^a-zA-Z0-9]/g, '_');
 
   // 1. Remove element immediately from DOM with smooth transition
   const card = document.querySelector(`.moment-card[data-id="${id}"]`);
@@ -2991,20 +3295,36 @@ window.deleteMoment = async function(id) {
     setTimeout(() => card.remove(), 250);
   }
 
-  // 2. Blacklist so it will never be pulled again by Cloudinary fetch
+  // 2. Blacklist locally so it will never be pulled again
   markCloudinaryMomentDeleted(id);
+  markCloudinaryMomentDeleted(cleanPublicId);
+  markCloudinaryMomentDeleted(cldKey);
 
   // 3. Remove from Cloudinary localStorage
   removeCloudinaryMoment(id);
+  removeCloudinaryMoment(cleanPublicId);
+  removeCloudinaryMoment(cldKey);
 
   // 4. Remove from IndexedDB
   await dbDeleteAlbumPhoto(id);
+  await dbDeleteAlbumPhoto(cleanPublicId);
+  await dbDeleteAlbumPhoto(cldKey);
 
   // 5. Update state arrays
-  allMomentsCache = allMomentsCache.filter(m => String(m.id) !== String(id));
-  currentVisibleMoments = currentVisibleMoments.filter(m => String(m.id) !== String(id));
+  allMomentsCache = allMomentsCache.filter(m => 
+    String(m.id) !== String(id) && 
+    String(m.id) !== String(cleanPublicId) && 
+    String(m.id) !== String(cldKey) &&
+    String(m.cloudinaryPublicId) !== String(cleanPublicId)
+  );
+  currentVisibleMoments = currentVisibleMoments.filter(m => 
+    String(m.id) !== String(id) && 
+    String(m.id) !== String(cleanPublicId) && 
+    String(m.id) !== String(cldKey) &&
+    String(m.cloudinaryPublicId) !== String(cleanPublicId)
+  );
 
-  if (activeMomentId !== null && String(activeMomentId) === String(id)) {
+  if (activeMomentId !== null && (String(activeMomentId) === String(id) || String(activeMomentId) === String(cleanPublicId))) {
     closeLightbox();
   }
 
@@ -3012,7 +3332,15 @@ window.deleteMoment = async function(id) {
     applyFilterAndRender();
   }, 260);
 
-  showToast('Foto kenangan berhasil dihapus dari album.', 'info');
+  showToast('Menghapus dan menyinkronkan ke seluruh perangkat... ☁️', 'info');
+
+  // 6. Broadcast deletion tombstone to Cloudinary so all devices remove it
+  const broadcastOk = await broadcastCloudinaryDeletion(cleanPublicId, id, deleteToken);
+  if (broadcastOk) {
+    showToast('Foto kenangan berhasil dihapus dari semua perangkat! 🗑️✨', 'success');
+  } else {
+    showToast('Foto berhasil dihapus secara lokal dan akan disinkronkan saat terhubung kembali.', 'info');
+  }
 };
 
 function setupGalleryFilters() {
@@ -3031,6 +3359,14 @@ function setupGalleryFilters() {
     clearAllBtn.addEventListener('click', () => {
       if (!confirm('Hapus seluruh foto & video tambahan yang Anda upload secara mandiri dari browser ini? (24 foto kenangan utama tidak akan terhapus)')) return;
 
+      const userItems = allMomentsCache.filter(m => !m.isPreset);
+      userItems.forEach(item => {
+        const cleanPublicId = item.cloudinaryPublicId || (String(item.id).startsWith('cld_') ? String(item.id).replace(/^cld_/, '') : String(item.id));
+        markCloudinaryMomentDeleted(item.id);
+        markCloudinaryMomentDeleted(cleanPublicId);
+        broadcastCloudinaryDeletion(cleanPublicId, item.id, item.deleteToken || '').catch(() => {});
+      });
+
       persistUserMoments([]);
       persistCloudinaryMoments([]);
 
@@ -3045,7 +3381,7 @@ function setupGalleryFilters() {
 
       allMomentsCache = [...ASET_FOTO_ITEMS];
       applyFilterAndRender();
-      showToast('Seluruh unggahan baru berhasil dibersihkan!', 'info');
+      showToast('Seluruh unggahan baru berhasil dibersihkan dan disinkronkan!', 'info');
     });
   }
 }

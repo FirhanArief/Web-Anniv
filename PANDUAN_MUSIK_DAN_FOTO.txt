@@ -18,9 +18,11 @@ Selamat! Web surprise anniversary untuk pasangan Anda telah siap digunakan.
 
 3. ALBUM GALERI POLAROID & FITUR UPLOAD PERMANEN:
    - Koleksi 24 Foto Kenangan Utama (Maret 2025 s/d Oktober 2026) ditampilkan rapi dalam desain kartu Polaroid Modern lengkap dengan efek washi-tape dan stempel tanggal.
-   - FITUR UPLOAD FOTO BARU (OTOMATIS TERSIMPAN & BISA DILIHAT):
+   - FITUR UPLOAD & HAPUS FOTO SINKRON ANTAR PERANGKAT:
      * Tombol "Upload Foto ke Album": Klik tombol di toolbar atas galeri atau tarik (drag-and-drop) foto langsung ke area galeri.
      * Multi-Upload (Banyak Foto Sekaligus): Anda dapat memilih beberapa foto sekaligus, sistem akan otomatis mengompresi dan menyimpannya secara berurutan ke album.
+     * Sinkronisasi Otomatis Antar Perangkat: Foto atau video yang Anda upload akan langsung muncul di perangkat lain.
+     * Sinkronisasi Hapus Foto: Saat Anda menghapus foto di salah satu perangkat, foto tersebut juga akan otomatis terhapus di perangkat lain secara real-time.
      * Dukungan Kamera Langsung: Klik tombol "Kamera" untuk mengambil foto langsung dari HP/laptop.
      * Penyimpanan Permanen Otomatis: Foto yang diunggah disimpan di IndexedDB browser (dengan cadangan LocalStorage). Saat web direfresh atau dibuka kembali, foto tetap tersimpan dan langsung terlihat di album ("Foto Unggahan Kita").
      * Fullscreen Lightbox Album: Klik foto apa saja untuk membuka resolusi penuh dengan navigasi panah, swipe di HP, dan tombol hapus/jadikan sorotan utama.
