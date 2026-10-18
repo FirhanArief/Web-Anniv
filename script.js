@@ -238,8 +238,26 @@ function initSurpriseGate() {
     }
   }
 
+  const WRONG_PIN_MESSAGES = [
+    'Hayo, ini siapa ya? Kalau ayang beneran masa lupa tanggal keramat kita 😜',
+    'Tetot, salah! Hayo ngaku, penyusup mau ngintip ya? 🤨',
+    'Waduh salah... masa hari jadian sendiri amnesia? Coba inget-inget lagi deh 🤭',
+    'Bukan itu kuncinya! Awas ya kalau sampai beneran lupa hari jadian kita 😤',
+    'Salah woy! Akses khusus ayang tersayang doang, yang lain dilarang kepo 🤫'
+  ];
+  let wrongPinAttemptIndex = 0;
+
+  const HINT_MESSAGES = [
+    'Clue: 8 digit hari paling bersejarah buat kita berdua (DDMMYYYY). Jangan pura-pura lupa ya! 😉',
+    'Petunjuk: Tanggal waktu kamu resmi jadi milikku (DDMMYYYY). Masa nggak inget sih? 😜',
+    'Clue: Hari pertama cerita kita resmi dimulai (format: DDMMYYYY). Mikir keras ya! 🤭'
+  ];
+  let hintAttemptIndex = 0;
+
   function showHint() {
-    setStatus('Petunjuk: Tanggal hari jadian kita berdua format DDMMYYYY (16-12-2019) 🥰', 'normal');
+    const hintMsg = HINT_MESSAGES[hintAttemptIndex % HINT_MESSAGES.length];
+    hintAttemptIndex++;
+    setStatus(hintMsg, 'normal');
     if (window.triggerParticleBurst) {
       const rect = hintBtn ? hintBtn.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
       window.triggerParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 12);
@@ -270,6 +288,10 @@ function initSurpriseGate() {
 
       if (envelope) {
         envelope.classList.add('opened');
+        const letterBadge = envelope.querySelector('.letter-badge');
+        if (letterBadge) {
+          letterBadge.textContent = '16-12-2019';
+        }
       }
 
       // Celebratory particle burst
@@ -299,7 +321,9 @@ function initSurpriseGate() {
         displayWrapper.classList.remove('success');
         displayWrapper.classList.add('error');
       }
-      setStatus('Ups, PIN salah sayang! Coba ingat tanggal pertama kita jadian ya (16-12-2019) 💕', 'error');
+      const errMsg = WRONG_PIN_MESSAGES[wrongPinAttemptIndex % WRONG_PIN_MESSAGES.length];
+      wrongPinAttemptIndex++;
+      setStatus(errMsg, 'error');
 
       setTimeout(() => {
         enteredPin = '';
@@ -331,7 +355,7 @@ function initSurpriseGate() {
       if (enteredPin.length === 8) {
         validatePin();
       } else {
-        setStatus('Ketikkan lengkap 8 digit PIN tanggal jadian kita ya sayang! 💕', 'error');
+        setStatus('Ketik 8 digit dulu ya, jangan buru-buru! 😜', 'error');
         if (displayWrapper) {
           displayWrapper.classList.remove('error');
           void displayWrapper.offsetWidth;
@@ -356,7 +380,7 @@ function initSurpriseGate() {
       if (enteredPin.length === 8) {
         validatePin();
       } else {
-        setStatus('Ketikkan lengkap 8 digit PIN tanggal jadian kita ya sayang! 💕', 'error');
+        setStatus('Ketik 8 digit dulu ya, jangan buru-buru! 😜', 'error');
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
