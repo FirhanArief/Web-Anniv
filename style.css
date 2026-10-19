@@ -3408,8 +3408,9 @@ body::before {
 .footer-subtext {
   font-family: var(--font-sans);
   font-size: 0.78rem;
-  color: #71717a;
-  font-weight: 300;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
   margin-top: 8px;
   margin-bottom: 0;
   letter-spacing: 0.02em;
