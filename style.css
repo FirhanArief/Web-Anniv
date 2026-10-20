@@ -3006,8 +3006,8 @@ body::before {
 
 .btn-wish {
   background: var(--gradient-love-joy);
-  color: white;
-  border: none;
+  color: #14141a;
+  border: 1px solid rgba(15, 15, 20, 0.14);
   border-radius: 30px;
   padding: 12px;
   font-family: var(--font-sans);
@@ -3023,7 +3023,13 @@ body::before {
 
 .btn-wish:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(230, 57, 70, 0.4);
+  filter: brightness(0.97);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+}
+
+.btn-wish:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
 }
 
 /* Wishes Divider */
