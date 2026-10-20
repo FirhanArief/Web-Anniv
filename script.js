@@ -779,17 +779,21 @@ const CLOUDINARY_PENDING_DELETIONS_KEY = 'anniversary_pending_deletions_v1';
 
 /**
  * Helper URL Cloudinary (Render Image Saja):
- * Menyisipkan transformasi otomatis '/upload/f_auto,q_auto,w_800/'
- * saat disuntikkan ke atribut src thumbnail / grid galeri.
+ * Menyisipkan parameter transformasi otomatis '/upload/f_auto,q_auto,w_400,c_fill/'
+ * saat disuntikkan ke atribut src thumbnail grid galeri 2 kolom.
+ * Resolusi asli/besar hanya dimuat saat user mengetuk foto untuk membuka modal/lightbox.
  * Data URL asli di state / storage / database TIDAK di-overwrite.
  */
-function getOptimizedCloudinaryUrl(url) {
+function getOptimizedCloudinaryUrl(url, transform = 'f_auto,q_auto,w_400,c_fill') {
   if (!url || typeof url !== 'string') return url;
   if (!url.includes('cloudinary.com') || !url.includes('/upload/')) return url;
   // Khusus render image (lewati file video stream)
   if (url.match(/\.(mp4|webm|mov|mkv|ogg)(\?.*)?$/i)) return url;
-  if (url.includes('/upload/f_auto,q_auto,w_800/')) return url;
-  return url.replace('/upload/', '/upload/f_auto,q_auto,w_800/');
+  if (url.includes(`/upload/${transform}/`)) return url;
+  if (url.includes('/upload/f_auto,q_auto,w_800/')) {
+    return url.replace('/upload/f_auto,q_auto,w_800/', `/upload/${transform}/`);
+  }
+  return url.replace('/upload/', `/upload/${transform}/`);
 }
 
 function getDeletedCloudinaryIds() {
