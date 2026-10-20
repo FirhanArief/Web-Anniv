@@ -303,6 +303,8 @@ export function CoverflowCarousel({
                   src={slide.src}
                   alt={slide.alt}
                   draggable={false}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full select-none object-cover"
                 />
               </div>

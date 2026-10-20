@@ -425,6 +425,9 @@ function initSurpriseGate() {
       }
 
       setStatus('Masukkan tanggal hari pertama kita jadian (DDMMYYYY)', 'normal');
+      if (window.pauseMusic) {
+        window.pauseMusic();
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (window.showToast) {
@@ -525,6 +528,7 @@ function initMusicPlayer() {
     isPlaying = false;
     updateUI();
   }
+  window.pauseMusic = pauseMusic;
 
   function togglePlay() {
     if (isPlaying) {
@@ -651,21 +655,34 @@ function initMusicPlayer() {
     });
   }
 
-  // Attempt direct autoplay immediately on page load
-  window.playMusic();
+  // Pastikan audio tidak men-download atau dimainkan sebelum PIN dibuka
+  const isGateUnlocked = () => {
+    try {
+      return sessionStorage.getItem('anniversary_session_unlocked') === 'true';
+    } catch (e) {
+      return false;
+    }
+  };
 
-  // Browser Autoplay Policy: unlock audio on first user gesture anywhere
+  // Attempt direct autoplay immediately only if PIN gate has already been unlocked in this session
+  if (isGateUnlocked()) {
+    window.playMusic();
+  }
+
+  // Browser Autoplay Policy: unlock audio on first user gesture anywhere (only after PIN gate unlocked)
   const unlockAudioEvents = ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll'];
   const unlockHandler = () => {
-    if (!isPlaying) {
+    if (!isPlaying && isGateUnlocked()) {
       window.playMusic();
     }
-    unlockAudioEvents.forEach(evt => {
-      window.removeEventListener(evt, unlockHandler, { passive: true });
-    });
+    if (isGateUnlocked()) {
+      unlockAudioEvents.forEach(evt => {
+        window.removeEventListener(evt, unlockHandler, { passive: true });
+      });
+    }
   };
   unlockAudioEvents.forEach(evt => {
-    window.addEventListener(evt, unlockHandler, { passive: true, once: true });
+    window.addEventListener(evt, unlockHandler, { passive: true });
   });
 }
 
@@ -759,6 +776,21 @@ const CLOUDINARY_MOMENTS_STORAGE_KEY = 'anniversary_cloudinary_moments_v1';
 const CLOUDINARY_DELETED_KEY = 'anniversary_deleted_cld_ids_v1';
 const CLOUDINARY_SYNCED_TOMBSTONES_KEY = 'anniversary_synced_tombstones_v1';
 const CLOUDINARY_PENDING_DELETIONS_KEY = 'anniversary_pending_deletions_v1';
+
+/**
+ * Helper URL Cloudinary (Render Image Saja):
+ * Menyisipkan transformasi otomatis '/upload/f_auto,q_auto,w_800/'
+ * saat disuntikkan ke atribut src thumbnail / grid galeri.
+ * Data URL asli di state / storage / database TIDAK di-overwrite.
+ */
+function getOptimizedCloudinaryUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('cloudinary.com') || !url.includes('/upload/')) return url;
+  // Khusus render image (lewati file video stream)
+  if (url.match(/\.(mp4|webm|mov|mkv|ogg)(\?.*)?$/i)) return url;
+  if (url.includes('/upload/f_auto,q_auto,w_800/')) return url;
+  return url.replace('/upload/', '/upload/f_auto,q_auto,w_800/');
+}
 
 function getDeletedCloudinaryIds() {
   try {
@@ -2847,7 +2879,7 @@ function initHeroPhotoShowcase() {
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-label', `Lihat sorotan ${item.title}`);
       btn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-      btn.innerHTML = `<img src="${item.thumb}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.src}'">`;
+      btn.innerHTML = `<img src="${getOptimizedCloudinaryUrl(item.thumb || item.src)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="this.src='${item.src}'">`;
 
       btn.addEventListener('click', () => {
         setHeroPhoto(index);
@@ -2864,7 +2896,7 @@ function initHeroPhotoShowcase() {
 
     imgEl.style.opacity = '0.3';
     setTimeout(() => {
-      imgEl.src = item.thumb;
+      imgEl.src = getOptimizedCloudinaryUrl(item.thumb || item.src);
       imgEl.onerror = () => { imgEl.src = item.src; };
       imgEl.alt = item.title;
       imgEl.setAttribute('data-id', item.id);
@@ -2943,7 +2975,7 @@ function initGalleryHighlights() {
     card.setAttribute('aria-label', `Buka momen sorotan: ${m.title}`);
 
     card.innerHTML = `
-      <img src="${m.item.thumb}" alt="${escapeHtml(m.title)}" loading="lazy" onerror="this.src='${m.item.src}'">
+      <img src="${getOptimizedCloudinaryUrl(m.item.thumb || m.item.src)}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async" onerror="this.src='${m.item.src}'">
       <div class="highlight-overlay">
         ${m.tag ? `<span class="hl-tag">${m.tag}</span>` : ''}
         <h4 class="hl-title">${m.title}</h4>
@@ -3209,12 +3241,13 @@ function renderGalleryGrid(moments) {
     card.dataset.year = item.year || 'all';
 
     const isVideo = item.type === 'video';
+    const thumbSrc = getOptimizedCloudinaryUrl(item.thumb || item.src);
     const mediaHtml = isVideo
       ? `<div class="moment-media-video-wrap">
-          <img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">
+          <img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">
           <span class="video-play-indicator" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
         </div>`
-      : `<img src="${item.thumb || item.src}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">`;
+      : `<img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">`;
 
     const isCloud = !!item.isCloudinary || (typeof item.src === 'string' && item.src.includes('cloudinary.com'));
     const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isCloud ? (isVideo ? 'Cloud Video' : 'Cloud Foto') : (isVideo ? 'Video Kita' : 'Foto Kita'));
@@ -3279,8 +3312,8 @@ window.setAsHeroPhoto = function(id) {
   const heroPolaroid = document.getElementById('heroPolaroid');
 
   if (heroImg) {
-    heroImg.src = item.src || item.thumb;
-    heroImg.onerror = () => { if (item.thumb) heroImg.src = item.thumb; };
+    heroImg.src = getOptimizedCloudinaryUrl(item.src || item.thumb);
+    heroImg.onerror = () => { if (item.thumb) heroImg.src = getOptimizedCloudinaryUrl(item.thumb); };
     heroImg.alt = item.title;
   }
   if (heroTitle) heroTitle.textContent = `${item.title} ❤️`;
@@ -3550,7 +3583,7 @@ function renderLightboxCurrent() {
   if (mediaWrapper) {
     mediaWrapper.innerHTML = item.type === 'video'
       ? `<video src="${item.src}" controls autoplay playsinline style="max-height: 68vh; max-width: 100%; border-radius: 14px; background: #000; box-shadow: 0 10px 40px rgba(0,0,0,0.8);"></video>`
-      : `<img src="${item.src}" alt="${escapeHtml(item.title)}" onerror="this.src='${item.thumb}'" style="max-height: 68vh; max-width: 100%; border-radius: 14px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">`;
+      : `<img src="${item.src}" alt="${escapeHtml(item.title)}" decoding="async" onerror="this.src='${item.thumb}'" style="max-height: 68vh; max-width: 100%; border-radius: 14px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">`;
   }
 
   if (titleEl) titleEl.textContent = item.title;
