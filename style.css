@@ -53,6 +53,11 @@
   box-sizing: border-box;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Accessibility: WCAG AA Compliant Focus Indicator (R-32) */
 :focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
@@ -229,10 +234,9 @@ body::before {
   content: '';
   position: absolute;
   inset: -30px;
-  background: url('assets/lock-background.png') center center / cover no-repeat;
-  filter: blur(40px) brightness(0.35);
+  background: url('assets/lock-background-blur.webp') center center / cover no-repeat;
+  filter: brightness(0.35);
   opacity: 0.7;
-  transform: scale(1.06);
   pointer-events: none;
   z-index: 0;
 }
@@ -249,7 +253,7 @@ body::before {
   max-width: 580px;
   height: 100%;
   background: linear-gradient(to bottom, rgba(5, 5, 8, 0.25) 0%, rgba(5, 5, 8, 0.38) 50%, rgba(5, 5, 8, 0.65) 100%),
-              url('assets/lock-background.png') center bottom / cover no-repeat;
+              url('assets/lock-background-q92.webp') center bottom / cover no-repeat;
   box-shadow: 0 0 90px 45px #07070a;
   pointer-events: none;
   z-index: 1;
@@ -266,8 +270,8 @@ body::before {
   z-index: 2;
   background: rgba(10, 10, 14, 0.60);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 28px;
   padding: 34px 26px 24px;
   text-align: center;
@@ -512,8 +516,8 @@ body::before {
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 20px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
   transition: var(--transition-smooth);
@@ -629,8 +633,6 @@ body::before {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   color: #f7f7f8;
   font-size: 1.35rem;
   font-weight: 600;
@@ -4617,7 +4619,7 @@ body::before {
     left: 0;
     transform: none;
     background: linear-gradient(to bottom, rgba(5, 5, 8, 0.2) 0%, rgba(5, 5, 8, 0.35) 45%, rgba(5, 5, 8, 0.65) 100%),
-                url('assets/lock-background.png') center bottom / cover no-repeat;
+                url('assets/lock-background-q92.webp') center bottom / cover no-repeat;
     box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6);
   }
 
@@ -5185,4 +5187,18 @@ button:active:not(:disabled),
   transform: scale(0.96);
   transition: transform 0.1s ease;
 }
+
+@media (max-width: 820px), (update: slow), (prefers-reduced-motion: reduce) {
+  .gate-card, .pin-display-wrapper, .nav-music-pill, .nav-lock-pill,
+  .music-card, .parchment-paper {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 10, 14, 0.88) !important;
+  }
+  .fixed-bg-image {
+    background-attachment: scroll !important;
+    will-change: auto !important;
+  }
+}
+
 

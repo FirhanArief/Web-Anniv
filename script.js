@@ -52,16 +52,34 @@ function initParticleCanvas() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  let width = canvas.width = window.innerWidth;
-  let height = canvas.height = window.innerHeight;
+  // Jika prefers-reduced-motion: reduce, jangan jalankan animasi sama sekali
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReducedMotion) {
+    window.startParticleCanvas = () => {};
+    window.triggerParticleBurst = () => {};
+    return;
+  }
+
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+  function resizeCanvas() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+  }
+  resizeCanvas();
 
   window.addEventListener('resize', () => {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+    resizeCanvas();
   });
 
   const particles = [];
-  const maxParticles = window.innerWidth < 768 ? 35 : 65;
+  const maxParticles = window.innerWidth < 768 ? 12 : 40;
 
   class Particle {
     constructor(x, y, isBurst = false) {
@@ -139,8 +157,25 @@ function initParticleCanvas() {
     particles.push(new Particle(Math.random() * width, Math.random() * height));
   }
 
-  function animate() {
-    ctx.clearRect(0, 0, width, height);
+  let isRunning = false;
+  let animationFrameId = null;
+  const fpsInterval = 1000 / 30; // Batasi animasi ke maksimal 30fps
+  let lastFrameTime = 0;
+
+  function animate(timestamp) {
+    if (!isRunning) return;
+    animationFrameId = requestAnimationFrame(animate);
+
+    if (!timestamp) timestamp = performance.now();
+    const elapsed = timestamp - lastFrameTime;
+    if (elapsed < fpsInterval) return;
+
+    lastFrameTime = timestamp - (elapsed % fpsInterval);
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(dpr, dpr);
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
@@ -151,9 +186,29 @@ function initParticleCanvas() {
         p.draw();
       }
     }
-    requestAnimationFrame(animate);
+    ctx.restore();
   }
-  animate();
+
+  window.startParticleCanvas = () => {
+    if (isRunning) return;
+    isRunning = true;
+    lastFrameTime = performance.now();
+    animationFrameId = requestAnimationFrame(animate);
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    } else {
+      if (isRunning && !animationFrameId) {
+        lastFrameTime = performance.now();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+  });
 
   window.triggerParticleBurst = (x, y, count = 25) => {
     for (let i = 0; i < count; i++) {
@@ -197,6 +252,7 @@ function initSurpriseGate() {
       if (gate) gate.classList.add('open');
       if (mainContent) mainContent.classList.remove('hidden');
       if (window.updatePhotoboothParallax) setTimeout(window.updatePhotoboothParallax, 50);
+      if (window.startParticleCanvas) window.startParticleCanvas();
     }
   } catch (e) {}
 
@@ -296,7 +352,10 @@ function initSurpriseGate() {
         }
       }
 
-      // Celebratory particle burst
+      // Start continuous particle canvas and celebratory particle burst
+      if (window.startParticleCanvas) {
+        window.startParticleCanvas();
+      }
       if (window.triggerParticleBurst) {
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
@@ -784,7 +843,7 @@ const CLOUDINARY_PENDING_DELETIONS_KEY = 'anniversary_pending_deletions_v1';
  * Resolusi asli/besar hanya dimuat saat user mengetuk foto untuk membuka modal/lightbox.
  * Data URL asli di state / storage / database TIDAK di-overwrite.
  */
-function getOptimizedCloudinaryUrl(url, transform = 'f_auto,q_auto,w_400,c_fill') {
+function getOptimizedCloudinaryUrl(url, transform = 'f_auto,q_auto,w_600,dpr_auto') {
   if (!url || typeof url !== 'string') return url;
   if (!url.includes('cloudinary.com') || !url.includes('/upload/')) return url;
   // Khusus render image (lewati file video stream)
@@ -792,6 +851,9 @@ function getOptimizedCloudinaryUrl(url, transform = 'f_auto,q_auto,w_400,c_fill'
   if (url.includes(`/upload/${transform}/`)) return url;
   if (url.includes('/upload/f_auto,q_auto,w_800/')) {
     return url.replace('/upload/f_auto,q_auto,w_800/', `/upload/${transform}/`);
+  }
+  if (url.includes('/upload/f_auto,q_auto,w_400,c_fill/')) {
+    return url.replace('/upload/f_auto,q_auto,w_400,c_fill/', `/upload/${transform}/`);
   }
   return url.replace('/upload/', `/upload/${transform}/`);
 }
@@ -2883,7 +2945,7 @@ function initHeroPhotoShowcase() {
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-label', `Lihat sorotan ${item.title}`);
       btn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-      btn.innerHTML = `<img src="${getOptimizedCloudinaryUrl(item.thumb || item.src)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="this.src='${item.src}'">`;
+      btn.innerHTML = `<img src="${getOptimizedCloudinaryUrl(item.thumb || item.src)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="this.src='${item.src}'" width="600" height="800">`;
 
       btn.addEventListener('click', () => {
         setHeroPhoto(index);
@@ -2979,7 +3041,7 @@ function initGalleryHighlights() {
     card.setAttribute('aria-label', `Buka momen sorotan: ${m.title}`);
 
     card.innerHTML = `
-      <img src="${getOptimizedCloudinaryUrl(m.item.thumb || m.item.src)}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async" onerror="this.src='${m.item.src}'">
+      <img src="${getOptimizedCloudinaryUrl(m.item.thumb || m.item.src)}" alt="${escapeHtml(m.title)}" loading="lazy" decoding="async" onerror="this.src='${m.item.src}'" width="600" height="800">
       <div class="highlight-overlay">
         ${m.tag ? `<span class="hl-tag">${m.tag}</span>` : ''}
         <h4 class="hl-title">${m.title}</h4>
@@ -3083,25 +3145,85 @@ async function syncRemoteGallery(isBackground = false) {
   }
 }
 
-// Background live sync triggers across devices
+// Deferred & background live sync triggers across devices
+let _cloudinarySyncScheduled = false;
+let _gallerySyncActive = false;
+
+function scheduleCloudinaryGallerySync() {
+  if (_cloudinarySyncScheduled) return;
+  _cloudinarySyncScheduled = true;
+
+  function doSync() {
+    if (_gallerySyncActive) return;
+    _gallerySyncActive = true;
+    syncRemoteGallery();
+
+    if (!window._gallerySyncIntervalStarted) {
+      window._gallerySyncIntervalStarted = true;
+      setInterval(() => {
+        if (!document.hidden) {
+          syncRemoteGallery(true);
+        }
+      }, 15000);
+    }
+  }
+
+  const galleryEl = document.getElementById('gallery');
+  let observer = null;
+  if (galleryEl && 'IntersectionObserver' in window) {
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (observer) {
+            observer.disconnect();
+            observer = null;
+          }
+          doSync();
+        }
+      });
+    }, { rootMargin: '300px 0px' });
+    observer.observe(galleryEl);
+  }
+
+  // Idle trigger fallback
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      doSync();
+    }, { timeout: 6000 });
+  } else {
+    setTimeout(() => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      doSync();
+    }, 5000);
+  }
+}
+
 if (!window._gallerySyncListenersAttached) {
   window._gallerySyncListenersAttached = true;
-  setInterval(() => {
-    syncRemoteGallery(true);
-  }, 12000);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && _gallerySyncActive) {
       syncRemoteGallery(true);
     }
   });
 
   window.addEventListener('focus', () => {
-    syncRemoteGallery(true);
+    if (_gallerySyncActive) {
+      syncRemoteGallery(true);
+    }
   });
 
   window.addEventListener('online', () => {
-    syncRemoteGallery(true);
+    if (_gallerySyncActive) {
+      syncRemoteGallery(true);
+    }
   });
 }
 
@@ -3176,8 +3298,8 @@ async function loadGalleryMoments() {
     allMomentsCache = [...dedupedUserPhotos, ...ASET_FOTO_ITEMS];
     applyFilterAndRender();
 
-    // Trigger full live sync with Cloudinary (tombstones & remote uploads)
-    syncRemoteGallery();
+    // Muat album Cloudinary saat section galeri mendekati viewport atau saat halaman idle
+    scheduleCloudinaryGallerySync();
   } catch (err) {
     console.warn('Error loading gallery moments:', err);
     const storedCloudinary = getStoredCloudinaryMoments();
@@ -3248,10 +3370,10 @@ function renderGalleryGrid(moments) {
     const thumbSrc = getOptimizedCloudinaryUrl(item.thumb || item.src);
     const mediaHtml = isVideo
       ? `<div class="moment-media-video-wrap">
-          <img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">
+          <img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();" width="600" height="800">
           <span class="video-play-indicator" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
         </div>`
-      : `<img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();">`;
+      : `<img src="${thumbSrc}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" onerror="const c=this.closest('.moment-card'); if(c) c.remove();" width="600" height="800">`;
 
     const isCloud = !!item.isCloudinary || (typeof item.src === 'string' && item.src.includes('cloudinary.com'));
     const badgeText = item.isPreset ? (item.year || 'Kenangan') : (isCloud ? (isVideo ? 'Cloud Video' : 'Cloud Foto') : (isVideo ? 'Video Kita' : 'Foto Kita'));
